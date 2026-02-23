@@ -1,0 +1,8 @@
+# Bỏ qua môi trường ảo và file hệ thống Python
+backend/venv/
+venv/
+__pycache__/
+*.pyc
+
+# Bỏ qua file chứa mật khẩu/cấu hình bí mật
+.env
