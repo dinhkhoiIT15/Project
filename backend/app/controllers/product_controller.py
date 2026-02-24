@@ -5,22 +5,19 @@ def generate_ai_description(name, category_name):
     return f"Professional AI description for {name} ({category_name}): This high-quality product is designed for excellence and durability."
 
 def get_all_products():
-    # Nhận tham số tìm kiếm và lọc từ Frontend
     search = request.args.get('search', '')
     category_id = request.args.get('category_id', '')
     
     query = Product.query
     
-    # Lọc theo tên sản phẩm (không phân biệt hoa thường)
     if search:
         query = query.filter(Product.name.ilike(f'%{search}%'))
         
-    # Lọc theo loại sản phẩm (Category)
     if category_id:
         try:
             query = query.filter_by(category_id=int(category_id))
         except ValueError:
-            pass # Bỏ qua nếu category_id không hợp lệ
+            pass 
             
     products = query.all()
     result = []
@@ -36,7 +33,29 @@ def get_all_products():
         })
     return jsonify({"products": result, "status": "success"}), 200
 
-# ----- CÁC HÀM DƯỚI ĐÂY GIỮ NGUYÊN -----
+# MỚI: Hàm lấy chi tiết 1 sản phẩm
+def get_product_by_id(product_id):
+    product = Product.query.get(product_id)
+    if not product:
+        return jsonify({"message": "Product not found"}), 404
+        
+    category = Category.query.get(product.category_id)
+    category_name = category.name if category else "Uncategorized"
+        
+    return jsonify({
+        "product": {
+            "product_id": product.product_id,
+            "name": product.name,
+            "price": product.price,
+            "description": product.description,
+            "stock_quantity": product.stock_quantity,
+            "category_id": product.category_id,
+            "category_name": category_name,
+            "image_url": product.image_url
+        },
+        "status": "success"
+    }), 200
+
 def create_product():
     data = request.get_json()
     try:

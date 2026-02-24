@@ -5,6 +5,7 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import { ToastProvider } from "./context/ToastContext"; // MỚI IMPORT
 import Home from "./pages/customer/Home";
 import AdminLayout from "./components/layout/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
@@ -14,7 +15,10 @@ import Cart from "./pages/customer/Cart";
 import Checkout from "./pages/customer/Checkout";
 import MyOrders from "./pages/customer/MyOrders";
 import ManageOrders from "./pages/admin/ManageOrders";
-import Profile from "./pages/customer/Profile"; // MỚI: Import Profile
+import Profile from "./pages/customer/Profile";
+import ProductDetail from "./pages/customer/ProductDetail";
+import MockPaymentGateway from "./pages/customer/MockPaymentGateway";
+import MoMoPayment from "./pages/customer/MoMoPayment";
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -35,73 +39,89 @@ const AdminRoute = ({ children }) => {
 
 function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-background text-gray-800 font-sans">
-        <Routes>
-          <Route
-            path="/login"
-            element={<Navigate to="/" state={{ openLogin: true }} replace />}
-          />
-          <Route
-            path="/register"
-            element={<Navigate to="/" state={{ openRegister: true }} replace />}
-          />
-
-          <Route path="/" element={<Home />} />
-
-          {/* Các Route dành cho Customer */}
-          <Route
-            path="/cart"
-            element={
-              <PrivateRoute>
-                <Cart />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/checkout"
-            element={
-              <PrivateRoute>
-                <Checkout />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/my-orders"
-            element={
-              <PrivateRoute>
-                <MyOrders />
-              </PrivateRoute>
-            }
-          />
-
-          {/* MỚI: Route Quản lý tài khoản */}
-          <Route
-            path="/profile"
-            element={
-              <PrivateRoute>
-                <Profile />
-              </PrivateRoute>
-            }
-          />
-
-          {/* Các Route dành cho Admin */}
-          <Route
-            path="/admin"
-            element={
-              <AdminRoute>
-                <AdminLayout />
-              </AdminRoute>
-            }
-          >
-            <Route index element={<Dashboard />} />
-            <Route path="categories" element={<ManageCategories />} />
-            <Route path="products" element={<ManageProducts />} />
-            <Route path="orders" element={<ManageOrders />} />
-          </Route>
-        </Routes>
-      </div>
-    </Router>
+    <ToastProvider>
+      {" "}
+      {/* BAO BỌC Ở ĐÂY */}
+      <Router>
+        <div className="min-h-screen bg-background text-gray-800 font-sans">
+          <Routes>
+            <Route
+              path="/login"
+              element={<Navigate to="/" state={{ openLogin: true }} replace />}
+            />
+            <Route
+              path="/register"
+              element={
+                <Navigate to="/" state={{ openRegister: true }} replace />
+              }
+            />
+            <Route path="/" element={<Home />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route
+              path="/cart"
+              element={
+                <PrivateRoute>
+                  <Cart />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/checkout"
+              element={
+                <PrivateRoute>
+                  <Checkout />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/my-orders"
+              element={
+                <PrivateRoute>
+                  <MyOrders />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <PrivateRoute>
+                  <Profile />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/payment/:orderId"
+              element={
+                <PrivateRoute>
+                  <MockPaymentGateway />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/payment-momo/:orderId"
+              element={
+                <PrivateRoute>
+                  <MoMoPayment />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminLayout />
+                </AdminRoute>
+              }
+            >
+              <Route index element={<Dashboard />} />
+              <Route path="categories" element={<ManageCategories />} />
+              <Route path="products" element={<ManageProducts />} />
+              <Route path="orders" element={<ManageOrders />} />
+            </Route>
+          </Routes>
+        </div>
+      </Router>
+    </ToastProvider>
   );
 }
 

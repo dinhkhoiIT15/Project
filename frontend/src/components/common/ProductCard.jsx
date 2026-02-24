@@ -1,12 +1,13 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Button from './Button';
 import { ShoppingCart } from 'lucide-react';
 
 const ProductCard = ({ product, onAddToCart }) => {
   return (
     <div className="bg-surface rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-300 border border-gray-100 overflow-hidden flex flex-col group animate-fade-in">
-      {/* Product Image */}
-      <div className="h-56 bg-gray-100 flex items-center justify-center overflow-hidden relative">
+      {/* Product Image - Bọc trong Link */}
+      <Link to={`/product/${product.product_id}`} className="h-56 bg-gray-100 flex items-center justify-center overflow-hidden relative block">
         {product.image_url ? (
           <img 
             src={product.image_url} 
@@ -18,17 +19,20 @@ const ProductCard = ({ product, onAddToCart }) => {
         )}
         {/* Stock Badge */}
         {product.stock_quantity <= 0 && (
-          <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+          <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold z-10">
             Out of Stock
           </div>
         )}
-      </div>
+      </Link>
 
       {/* Product Info */}
       <div className="p-5 flex flex-col flex-grow">
-        <h3 className="text-lg font-bold text-gray-800 mb-1 truncate" title={product.name}>
-          {product.name}
-        </h3>
+        {/* Tên sản phẩm - Bọc trong Link */}
+        <Link to={`/product/${product.product_id}`} className="hover:text-primary-600 transition-colors">
+          <h3 className="text-lg font-bold text-gray-800 mb-1 truncate" title={product.name}>
+            {product.name}
+          </h3>
+        </Link>
         <p className="text-2xl font-extrabold text-primary-600 mb-3">
           ${product.price.toFixed(2)}
         </p>

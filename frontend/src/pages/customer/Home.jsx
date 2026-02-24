@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import ProductCard from '../../components/common/ProductCard';
 import api from '../../services/api';
+import { useToast } from '../../context/ToastContext'; // MỚI: Import useToast
 import { Loader2, AlertCircle, Search, Filter } from 'lucide-react';
 
 const Home = () => {
@@ -11,6 +12,7 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { addToast } = useToast(); // MỚI: Khởi tạo addToast
 
   // State lưu trữ dữ liệu tìm kiếm và bộ lọc
   const [searchTerm, setSearchTerm] = useState('');
@@ -61,17 +63,19 @@ const Home = () => {
     fetchProducts();
   };
 
+  // CẬP NHẬT: Sử dụng Toast thay vì alert
   const handleAddToCart = async (productId) => {
     const token = localStorage.getItem('token');
     if (!token) {
+      addToast('Please login to add products to cart!', 'info'); // Toast thông báo thay cho alert
       navigate('/login');
       return; 
     }
     try {
       await api.post('/cart', { product_id: productId, quantity: 1 });
-      alert('Product added to cart successfully!'); 
+      addToast('Product added to cart successfully!', 'success'); // Toast thành công
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to add product to cart');
+      addToast(err.response?.data?.message || 'Failed to add product to cart', 'error'); // Toast lỗi
     }
   };
 
@@ -107,7 +111,7 @@ const Home = () => {
           </form>
 
           <div className="relative w-full md:w-1/3">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-none">
               <Filter className="w-5 h-5 text-gray-400" />
             </div>
             <select
