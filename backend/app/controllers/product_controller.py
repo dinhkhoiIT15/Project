@@ -5,7 +5,24 @@ def generate_ai_description(name, category_name):
     return f"Professional AI description for {name} ({category_name}): This high-quality product is designed for excellence and durability."
 
 def get_all_products():
-    products = Product.query.all()
+    # Nhận tham số tìm kiếm và lọc từ Frontend
+    search = request.args.get('search', '')
+    category_id = request.args.get('category_id', '')
+    
+    query = Product.query
+    
+    # Lọc theo tên sản phẩm (không phân biệt hoa thường)
+    if search:
+        query = query.filter(Product.name.ilike(f'%{search}%'))
+        
+    # Lọc theo loại sản phẩm (Category)
+    if category_id:
+        try:
+            query = query.filter_by(category_id=int(category_id))
+        except ValueError:
+            pass # Bỏ qua nếu category_id không hợp lệ
+            
+    products = query.all()
     result = []
     for p in products:
         result.append({
@@ -19,6 +36,7 @@ def get_all_products():
         })
     return jsonify({"products": result, "status": "success"}), 200
 
+# ----- CÁC HÀM DƯỚI ĐÂY GIỮ NGUYÊN -----
 def create_product():
     data = request.get_json()
     try:
@@ -45,21 +63,18 @@ def create_product():
 
 def update_product(product_id):
     data = request.get_json()
-    # Sử dụng db.session.get (chuẩn mới) hoặc query.get
     product = Product.query.get(product_id)
     
     if not product:
         return jsonify({"message": "Product not found"}), 404
         
     try:
-        # Ép kiểu dữ liệu để an toàn cho DB
         if 'name' in data: product.name = data['name']
         if 'price' in data: product.price = float(data['price'])
         if 'stock_quantity' in data: product.stock_quantity = int(data['stock_quantity'])
         if 'image_url' in data: product.image_url = data['image_url']
         if 'category_id' in data: product.category_id = int(data['category_id'])
             
-        # AI viết lại mô tả
         category = Category.query.get(product.category_id)
         if category:
             product.description = generate_ai_description(product.name, category.name)

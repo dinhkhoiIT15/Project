@@ -2,6 +2,7 @@ from flask import Flask
 from flask_cors import CORS # MỚI THÊM 1: Nạp thư viện CORS
 from config import Config
 from app.models.models import db, User
+from app.routes.auth_routes import auth_bp # MỚI THÊM: Nạp blueprint auth
 from app.routes.user_routes import user_bp 
 from app.routes.category_routes import category_bp
 from app.routes.product_routes import product_bp
@@ -24,6 +25,7 @@ def create_app():
     jwt = JWTManager(app)
     
     # Đăng ký các đường dẫn (Routes) vào ứng dụng
+    app.register_blueprint(auth_bp) # MỚI THÊM: Đăng ký auth routes
     app.register_blueprint(user_bp)
     app.register_blueprint(category_bp)
     app.register_blueprint(product_bp)

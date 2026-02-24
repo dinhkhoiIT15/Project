@@ -5,8 +5,6 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
-import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
 import Home from "./pages/customer/Home";
 import AdminLayout from "./components/layout/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
@@ -14,21 +12,24 @@ import ManageCategories from "./pages/admin/ManageCategories";
 import ManageProducts from "./pages/admin/ManageProducts";
 import Cart from "./pages/customer/Cart";
 import Checkout from "./pages/customer/Checkout";
-import MyOrders from "./pages/customer/MyOrders"; // Đã thêm import
-import ManageOrders from "./pages/admin/ManageOrders"; // Đã thêm import
+import MyOrders from "./pages/customer/MyOrders";
+import ManageOrders from "./pages/admin/ManageOrders";
+import Profile from "./pages/customer/Profile"; // MỚI: Import Profile
 
-// Bảo vệ Route cho Customer: Chỉ cho phép truy cập nếu đã có Token
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem("token");
-  return token ? children : <Navigate to="/login" />;
+  return token ? (
+    children
+  ) : (
+    <Navigate to="/" state={{ openLogin: true }} replace />
+  );
 };
 
-// Bảo vệ Route cho Admin: Chỉ cho phép truy cập nếu đã có Token và Role là Admin
 const AdminRoute = ({ children }) => {
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
-  if (!token) return <Navigate to="/login" />;
-  if (role !== "Admin") return <Navigate to="/" />;
+  if (!token) return <Navigate to="/" state={{ openLogin: true }} replace />;
+  if (role !== "Admin") return <Navigate to="/" replace />;
   return children;
 };
 
@@ -37,19 +38,18 @@ function App() {
     <Router>
       <div className="min-h-screen bg-background text-gray-800 font-sans">
         <Routes>
-          {/* Các Route Công khai */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-
-          {/* Các Route dành cho Customer (Yêu cầu đăng nhập) */}
           <Route
-            path="/"
-            element={
-              <PrivateRoute>
-                <Home />
-              </PrivateRoute>
-            }
+            path="/login"
+            element={<Navigate to="/" state={{ openLogin: true }} replace />}
           />
+          <Route
+            path="/register"
+            element={<Navigate to="/" state={{ openRegister: true }} replace />}
+          />
+
+          <Route path="/" element={<Home />} />
+
+          {/* Các Route dành cho Customer */}
           <Route
             path="/cart"
             element={
@@ -66,7 +66,6 @@ function App() {
               </PrivateRoute>
             }
           />
-          {/* MỚI: Route xem lịch sử đơn hàng của cá nhân */}
           <Route
             path="/my-orders"
             element={
@@ -76,7 +75,17 @@ function App() {
             }
           />
 
-          {/* Các Route dành cho Admin (Được bảo vệ bởi AdminRoute) */}
+          {/* MỚI: Route Quản lý tài khoản */}
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <Profile />
+              </PrivateRoute>
+            }
+          />
+
+          {/* Các Route dành cho Admin */}
           <Route
             path="/admin"
             element={
@@ -88,7 +97,6 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="categories" element={<ManageCategories />} />
             <Route path="products" element={<ManageProducts />} />
-            {/* MỚI: Route quản lý toàn bộ đơn hàng của hệ thống */}
             <Route path="orders" element={<ManageOrders />} />
           </Route>
         </Routes>
