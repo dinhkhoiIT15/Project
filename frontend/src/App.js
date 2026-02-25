@@ -18,8 +18,6 @@ import MyOrders from "./pages/customer/MyOrders";
 import ManageOrders from "./pages/admin/ManageOrders";
 import Profile from "./pages/customer/Profile";
 import ProductDetail from "./pages/customer/ProductDetail";
-import MockPaymentGateway from "./pages/customer/MockPaymentGateway";
-import MoMoPayment from "./pages/customer/MoMoPayment";
 import Footer from "./components/layout/Footer";
 
 // Component trung gian để xử lý logic hiển thị Footer
@@ -71,22 +69,6 @@ const AppContent = () => {
             element={
               <PrivateRoute>
                 <Profile />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/payment/:orderId"
-            element={
-              <PrivateRoute>
-                <MockPaymentGateway />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/payment-momo/:orderId"
-            element={
-              <PrivateRoute>
-                <MoMoPayment />
               </PrivateRoute>
             }
           />
