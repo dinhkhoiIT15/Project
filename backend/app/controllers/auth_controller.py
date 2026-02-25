@@ -67,6 +67,6 @@ def login():
         "user": {
             "id": user.user_id,
             "username": user.username,
-            "role": user.role
+            "role": user.role # Gửi role về để Frontend quyết định lưu vào đâu
         }
     }), 200

@@ -7,6 +7,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { ToastProvider } from "./context/ToastContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import Home from "./pages/customer/Home";
 import AdminLayout from "./components/layout/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
@@ -20,24 +21,22 @@ import Profile from "./pages/customer/Profile";
 import ProductDetail from "./pages/customer/ProductDetail";
 import Footer from "./components/layout/Footer";
 
-// Component trung gian để xử lý logic hiển thị Footer
 const AppContent = () => {
   const location = useLocation();
-  // Kiểm tra xem có phải đường dẫn admin không
   const isAdminPath = location.pathname.startsWith("/admin");
+  const { loading } = useAuth();
+
+  if (loading)
+    return (
+      <div className="h-screen flex items-center justify-center font-bold text-[#6e7781]">
+        Verifying Session...
+      </div>
+    );
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-gray-800 font-sans">
       <div className="flex-grow">
         <Routes>
-          <Route
-            path="/login"
-            element={<Navigate to="/" state={{ openLogin: true }} replace />}
-          />
-          <Route
-            path="/register"
-            element={<Navigate to="/" state={{ openRegister: true }} replace />}
-          />
           <Route path="/" element={<Home />} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route
@@ -88,15 +87,14 @@ const AppContent = () => {
           </Route>
         </Routes>
       </div>
-      {/* Chỉ hiển thị Footer nếu KHÔNG phải trang Admin */}
       {!isAdminPath && <Footer />}
     </div>
   );
 };
 
 const PrivateRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
-  return token ? (
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? (
     children
   ) : (
     <Navigate to="/" state={{ openLogin: true }} replace />
@@ -104,19 +102,21 @@ const PrivateRoute = ({ children }) => {
 };
 
 const AdminRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
-  const role = localStorage.getItem("role");
-  if (!token) return <Navigate to="/" state={{ openLogin: true }} replace />;
-  if (role !== "Admin") return <Navigate to="/" replace />;
+  const { isAuthenticated, user } = useAuth(); // KHÔNG dùng localStorage ở đây
+  if (!isAuthenticated)
+    return <Navigate to="/" state={{ openLogin: true }} replace />;
+  if (user?.role !== "Admin") return <Navigate to="/" replace />;
   return children;
 };
 
 function App() {
   return (
     <ToastProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <AuthProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </AuthProvider>
     </ToastProvider>
   );
 }

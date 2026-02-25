@@ -11,6 +11,7 @@ def get_home():
 
 # 1. Lấy thông tin cá nhân
 def get_profile():
+    """Lấy thông tin profile và trả về Role thực tế từ DB"""
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     if not user:
@@ -18,11 +19,13 @@ def get_profile():
         
     return jsonify({
         "user": {
+            "id": user.user_id,
             "username": user.username,
+            "role": user.role, # Role này rất quan trọng để Frontend kiểm tra chéo
             "phone_number": user.phone_number,
-            "address": user.address,
-            "role": user.role
-        }
+            "address": user.address
+        },
+        "status": "success"
     }), 200
 
 # 2. Cập nhật hồ sơ (Số ĐT, Địa chỉ)

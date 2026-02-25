@@ -1,5 +1,5 @@
 from flask import request, jsonify
-from app.models.models import db, Product, Category
+from app.models.models import db, Product, Category, CartItem, OrderDetail, Review
 import math
 
 def generate_ai_description(name, category_name):
@@ -11,8 +11,6 @@ def get_all_products():
     search = request.args.get('search', '')
     category_id = request.args.get('category_id', '')
     
-    # 1. Lấy thông số phân trang từ Query Params
-    # Mặc định là trang 1 và 8 sản phẩm mỗi trang theo yêu cầu của bạn
     try:
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 8))
@@ -20,12 +18,10 @@ def get_all_products():
         page = 1
         per_page = 8
     
-    # 2. Xây dựng câu lệnh Query cơ bản với JOIN để lấy tên danh mục
     query = db.session.query(Product, Category.name.label('category_name')).outerjoin(
         Category, Product.category_id == Category.category_id
     )
     
-    # 3. Áp dụng các bộ lọc tìm kiếm và danh mục
     if search:
         query = query.filter(Product.name.ilike(f'%{search}%'))
         
@@ -35,12 +31,8 @@ def get_all_products():
         except ValueError:
             pass 
             
-    # 4. Tính toán tổng số lượng để phục vụ phân trang
     total_count = query.count()
     total_pages = math.ceil(total_count / per_page)
-    
-    # 5. Thực hiện phân trang (Limit và Offset)
-    # Ví dụ: Trang 2, per_page 8 => Offset = (2-1)*8 = 8 (bỏ qua 8 bản ghi đầu)
     products = query.offset((page - 1) * per_page).limit(per_page).all()
     
     result = []
@@ -52,11 +44,10 @@ def get_all_products():
             "description": p.description,
             "stock_quantity": p.stock_quantity,
             "category_id": p.category_id,
-            "category_name": category_name or "General", # Trả về tên danh mục thực tế
+            "category_name": category_name or "General",
             "image_url": p.image_url
         })
         
-    # Trả về kết quả kèm thông tin phân trang cho Frontend
     return jsonify({
         "products": result, 
         "total_pages": total_pages,
@@ -111,7 +102,7 @@ def create_product():
         db.session.commit()
         return jsonify({
             "message": "Product created successfully", 
-            "product": {"id": new_product.product_id, "description": new_product.description}
+            "product": {"id": new_product.product_id}
         }), 201
     except Exception as e:
         db.session.rollback()
@@ -132,30 +123,51 @@ def update_product(product_id):
         if 'image_url' in data: product.image_url = data['image_url']
         if 'category_id' in data: product.category_id = int(data['category_id'])
             
-        # Cập nhật lại mô tả AI nếu tên hoặc danh mục thay đổi
         category = Category.query.get(product.category_id)
         if category:
             product.description = generate_ai_description(product.name, category.name)
 
         db.session.commit()
-        return jsonify({
-            "message": "Product updated successfully", 
-            "product": {"id": product.product_id, "description": product.description}
-        }), 200
+        return jsonify({"message": "Product updated successfully"}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({"message": f"Update error: {str(e)}"}), 500
 
 def delete_product(product_id):
-    """Xóa sản phẩm khỏi hệ thống"""
+    """
+    Xóa sản phẩm và toàn bộ lịch sử liên quan (OrderDetail, Cart, Reviews).
+    Cho phép Admin dọn dẹp Database ngay cả khi sản phẩm đã có lịch sử đơn hàng.
+   
+    """
     product = Product.query.get(product_id)
     if not product:
         return jsonify({"message": "Product not found"}), 404
         
     try:
+        # 1. Xóa các bản ghi ở các bảng tham chiếu trước để tránh lỗi Foreign Key Constraint
+        # Xóa chi tiết đơn hàng liên quan đến sản phẩm này
+        OrderDetail.query.filter_by(product_id=product_id).delete()
+        
+        # Xóa các mục trong giỏ hàng của người dùng có chứa sản phẩm này
+        CartItem.query.filter_by(product_id=product_id).delete()
+        
+        # Xóa các đánh giá liên quan đến sản phẩm này
+        Review.query.filter_by(product_id=product_id).delete()
+
+        # 2. Xóa bản ghi sản phẩm chính khỏi bảng products
         db.session.delete(product)
+        
+        # 3. Lưu các thay đổi vào Database
         db.session.commit()
-        return jsonify({"message": "Product deleted successfully"}), 200
+        
+        return jsonify({
+            "message": "Product and all related history deleted successfully",
+            "status": "success"
+        }), 200
+        
     except Exception as e:
         db.session.rollback()
-        return jsonify({"message": f"Delete error: {str(e)}"}), 500
+        return jsonify({
+            "message": f"Delete error: {str(e)}",
+            "status": "error"
+        }), 500
