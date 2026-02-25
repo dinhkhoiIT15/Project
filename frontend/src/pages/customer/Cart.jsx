@@ -3,13 +3,15 @@ import { Link } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Button from '../../components/common/Button';
 import api from '../../services/api';
-import { useToast } from '../../context/ToastContext'; // Import Toast Hook
-import { Trash2, Plus, Minus, ShoppingCart, ArrowLeft, CreditCard } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
+import { ShoppingCart, CreditCard, ArrowLeft } from 'lucide-react';
+import CartItem from '../../components/cart/CartItem';
+import Breadcrumbs from '../../components/common/Breadcrumbs';
 
 const Cart = () => {
   const [cart, setCart] = useState({ cart_items: [], total_price: 0 });
   const [loading, setLoading] = useState(true);
-  const { addToast } = useToast(); // Khởi tạo Toast
+  const { addToast } = useToast();
 
   useEffect(() => { fetchCart(); }, []);
 
@@ -18,8 +20,7 @@ const Cart = () => {
       const res = await api.get('/cart');
       setCart(res.data);
     } catch (err) { 
-      console.error(err); 
-      addToast('Failed to load your cart', 'error'); // Thông báo lỗi tải giỏ hàng
+      addToast('Failed to load your cart', 'error'); 
     }
     finally { setLoading(false); }
   };
@@ -29,114 +30,88 @@ const Cart = () => {
     try {
       await api.put(`/cart/${itemId}`, { quantity: newQty });
       fetchCart();
-      addToast('Quantity updated successfully!', 'success'); // Thông báo cập nhật số lượng
+      addToast('Cart updated successfully!', 'success');
     } catch (err) { 
       addToast('Failed to update quantity', 'error'); 
     }
   };
 
   const handleRemove = async (itemId) => {
-    // Đã loại bỏ window.confirm theo yêu cầu để sử dụng trải nghiệm Toast đồng nhất
     try {
       await api.delete(`/cart/${itemId}`);
       fetchCart();
-      addToast('Item removed from cart', 'info'); // Thông báo xóa sản phẩm bằng Toast
+      addToast('Item has been removed from your cart', 'info');
     } catch (err) { 
       addToast('Failed to remove item', 'error'); 
     }
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       <Navbar />
-      <div className="text-center py-20 font-bold text-gray-500">Loading your cart...</div>
+      <div className="text-center py-20 font-bold text-[#6e7781]">Loading your shopping cart...</div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white font-sans">
       <Navbar />
-      <main className="max-w-6xl mx-auto px-4 py-10">
-        <h1 className="text-3xl font-black mb-8 flex items-center text-gray-800">
-          <ShoppingCart className="mr-3 text-primary-600" /> Shopping Cart
-        </h1>
+      <main className="max-w-6xl mx-auto px-4 py-8">
+        <Breadcrumbs>
+          <Breadcrumbs.Item to="/">Home</Breadcrumbs.Item>
+          <Breadcrumbs.Divider />
+          <Breadcrumbs.Item active>Shopping Cart</Breadcrumbs.Item>
+        </Breadcrumbs>
 
-        {cart.cart_items.length === 0 ? (
-          <div className="bg-surface p-20 rounded-2xl text-center shadow-sm border border-gray-100 animate-fade-in">
-            <p className="text-gray-400 text-xl mb-6 font-medium">Your cart is currently empty.</p>
-            <Link to="/"><Button className="px-10 py-3 shadow-lg shadow-primary-100">Shop Now</Button></Link>
-          </div>
-        ) : (
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Danh sách sản phẩm trong giỏ */}
-            <div className="lg:col-span-2 space-y-4">
-              {cart.cart_items.map(item => (
-                <div key={item.cart_item_id} className="bg-surface p-4 rounded-xl flex items-center gap-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow animate-fade-in">
-                  <img src={item.image_url} className="w-24 h-24 rounded-lg object-cover bg-gray-50" alt={item.product_name} />
-                  <div className="flex-grow">
-                    <h3 className="text-lg font-bold text-gray-800 mb-1">{item.product_name}</h3>
-                    <p className="text-primary-600 font-extrabold text-xl">${item.price.toFixed(2)}</p>
-                  </div>
-                  
-                  {/* Bộ điều khiển số lượng */}
-                  <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-                    <button 
-                      onClick={() => handleUpdateQty(item.cart_item_id, item.quantity - 1)} 
-                      className="p-3 hover:bg-gray-200 text-gray-600 transition-colors"
-                    >
-                      <Minus size={16}/>
-                    </button>
-                    <span className="px-4 font-bold text-gray-800 w-10 text-center">{item.quantity}</span>
-                    <button 
-                      onClick={() => handleUpdateQty(item.cart_item_id, item.quantity + 1)} 
-                      className="p-3 hover:bg-gray-200 text-gray-600 transition-colors"
-                    >
-                      <Plus size={16}/>
-                    </button>
-                  </div>
-                  
-                  {/* Nút xóa */}
-                  <button 
-                    onClick={() => handleRemove(item.cart_item_id)} 
-                    className="text-red-400 hover:text-red-600 p-3 hover:bg-red-50 rounded-lg transition-all"
-                    title="Remove item"
-                  >
-                    <Trash2 size={24}/>
-                  </button>
-                </div>
-              ))}
+        <div className="flex w-full flex-col items-start gap-6 mt-4">
+          <h1 className="text-2xl font-bold flex items-center gap-2 text-[#1f2328]">
+            <ShoppingCart className="text-[#6e7781]" size={28} /> Cart
+          </h1>
+          
+          {cart.cart_items.length === 0 ? (
+            <div className="w-full border border-solid border-[#d0d7de] p-16 rounded-lg text-center bg-[#f6f8fa]">
+              <p className="text-[#6e7781] mb-6">Your cart is currently empty.</p>
+              <Link to="/"><Button variant="outline">Start Shopping</Button></Link>
             </div>
-
-            {/* Bảng tổng kết đơn hàng */}
-            <div className="bg-surface p-8 rounded-2xl border border-gray-100 shadow-sm h-fit sticky top-24">
-              <h2 className="text-2xl font-black mb-8 text-gray-800 border-b pb-4">Order Summary</h2>
-              <div className="space-y-4 mb-8">
-                <div className="flex justify-between font-medium text-gray-600 text-lg">
-                  <span>Subtotal</span>
-                  <span className="text-gray-800 font-bold">${cart.total_price.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center text-lg">
-                  <span className="text-gray-600">Delivery</span>
-                  <span className="text-green-600 font-black uppercase text-xs px-2 py-1 bg-green-50 rounded-md">Free</span>
-                </div>
-                <div className="border-t pt-6 flex justify-between items-end">
-                  <span className="text-xl font-bold text-gray-800">Total</span>
-                  <span className="text-3xl font-black text-primary-600">${cart.total_price.toFixed(2)}</span>
-                </div>
+          ) : (
+            <div className="flex w-full flex-wrap items-start overflow-hidden rounded-md border border-solid border-[#d0d7de] bg-white">
+              <div className="flex grow shrink-0 basis-0 flex-col flex-wrap items-start border-r border-solid border-[#d0d7de] mobile:border-r-0 mobile:border-b">
+                {cart.cart_items.map(item => (
+                  <CartItem 
+                    key={item.cart_item_id} 
+                    item={item} 
+                    onUpdateQty={handleUpdateQty} 
+                    onRemove={handleRemove} 
+                  />
+                ))}
               </div>
-              <Link to="/checkout">
-                <Button fullWidth className="py-5 text-xl font-black shadow-xl shadow-primary-100">
-                  <CreditCard className="mr-2" /> Checkout Now
-                </Button>
-              </Link>
-              <div className="mt-6 text-center">
-                <Link to="/" className="text-gray-400 hover:text-primary-600 font-bold text-sm flex items-center justify-center transition-colors">
-                  <ArrowLeft size={16} className="mr-2" /> Continue Shopping
+
+              <div className="flex flex-col items-center gap-6 self-stretch px-6 py-6 min-w-[320px] bg-[#f6f8fa]">
+                <div className="flex w-full items-center justify-between">
+                  <span className="text-lg font-medium text-[#6e7781]">Subtotal</span>
+                  <span className="text-2xl font-bold text-[#1f2328]">
+                    ${cart.total_price.toFixed(2)}
+                  </span>
+                </div>
+                
+                <Link to="/checkout" className="w-full">
+                  <Button className="h-12 w-full flex-none shadow-sm" fullWidth>
+                    <CreditCard className="mr-2" size={20} /> Continue to checkout
+                  </Button>
                 </Link>
+                
+                <div className="flex flex-col items-center gap-2">
+                  <span className="text-xs text-[#6e7781] text-center">
+                    Taxes &amp; shipping calculated at checkout
+                  </span>
+                  <Link to="/" className="text-sm font-bold text-[#0969da] hover:underline flex items-center">
+                    <ArrowLeft size={14} className="mr-1" /> Continue Shopping
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </main>
     </div>
   );

@@ -1,158 +1,119 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import ProductCard from '../../components/common/ProductCard';
+import Pagination from '../../components/common/Pagination'; // MỚI IMPORT
 import api from '../../services/api';
-import { useToast } from '../../context/ToastContext'; // MỚI: Import useToast
-import { Loader2, AlertCircle, Search, Filter } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
+import { Loader2, Search } from 'lucide-react';
 
 const Home = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
-  const { addToast } = useToast(); // MỚI: Khởi tạo addToast
-
-  // State lưu trữ dữ liệu tìm kiếm và bộ lọc
+  const { addToast } = useToast();
+  
+  // State phân trang
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
+  // Reset về trang 1 mỗi khi tìm kiếm hoặc lọc danh mục
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory]);
+
   useEffect(() => {
     fetchCategories();
-    fetchProducts();
-    // eslint-disable-next-line
   }, []);
 
-  // Gọi lại API lấy sản phẩm mỗi khi đổi danh mục
   useEffect(() => {
     fetchProducts();
-    // eslint-disable-next-line
-  }, [selectedCategory]);
+  }, [selectedCategory, currentPage]); // Gọi lại khi đổi trang
 
   const fetchCategories = async () => {
     try {
       const res = await api.get('/categories');
       setCategories(res.data.categories || []);
-    } catch (err) {
-      console.error("Failed to load categories", err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      // Nối thêm Query Parameters vào URL
-      let url = '/products?';
-      if (searchTerm) url += `search=${searchTerm}&`;
-      if (selectedCategory) url += `category_id=${selectedCategory}`;
-      
-      const response = await api.get(url);
-      setProducts(response.data.products || []);
-      setError('');
-    } catch (err) {
-      setError('Failed to load products. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
+      // Gửi tham số page và per_page=8 lên Backend
+      const res = await api.get(`/products?search=${searchTerm}&category_id=${selectedCategory}&page=${currentPage}&per_page=8`);
+      setProducts(res.data.products || []);
+      setTotalPages(res.data.total_pages || 1);
+    } catch (err) { addToast('Error loading products', 'error'); }
+    finally { setLoading(false); }
   };
 
-  // Submit form tìm kiếm (ấn Enter hoặc nút Search)
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    fetchProducts();
-  };
-
-  // CẬP NHẬT: Sử dụng Toast thay vì alert
   const handleAddToCart = async (productId) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      addToast('Please login to add products to cart!', 'info'); // Toast thông báo thay cho alert
-      navigate('/login');
+    if (!localStorage.getItem('token')) {
+      addToast('Sign in to add to cart', 'info');
       return; 
     }
     try {
       await api.post('/cart', { product_id: productId, quantity: 1 });
-      addToast('Product added to cart successfully!', 'success'); // Toast thành công
-    } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to add product to cart', 'error'); // Toast lỗi
-    }
+      addToast('Product added to cart!', 'success');
+    } catch (err) { addToast('Failed to add', 'error'); }
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       <Navbar />
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="mb-8 text-center bg-gradient-to-r from-primary-900 to-primary-600 rounded-2xl p-10 shadow-lg text-white">
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-4 animate-fade-in">
-            Discover AI-Powered Products
-          </h1>
-          <p className="text-lg md:text-xl text-primary-100 max-w-2xl mx-auto">
-            Explore the best curated items tailored specifically for you.
-          </p>
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* Banner Section */}
+        <div className="mb-8 p-8 border border-[#d0d7de] rounded-lg bg-[#f6f8fa]">
+          <h1 className="text-2xl font-bold text-[#1f2328] mb-2">Welcome to our online store</h1>
+          <p className="text-[#6e7781] text-sm leading-relaxed">Browse and discover high-quality products curated for your needs.</p>
         </div>
 
-        {/* --- THANH TÌM KIẾM VÀ LỌC SẢN PHẨM --- */}
-        <div className="bg-surface p-4 rounded-xl shadow-sm border border-gray-100 mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-          
-          <form onSubmit={handleSearchSubmit} className="relative w-full md:w-1/2">
+        {/* Filter & Search Section */}
+        <div className="flex flex-col md:flex-row gap-3 mb-8">
+          <form onSubmit={(e) => {e.preventDefault(); setCurrentPage(1); fetchProducts();}} className="relative flex-grow">
+            <Search className="absolute left-3 top-2.5 text-[#6e7781]" size={16} />
             <input 
               type="text" 
-              placeholder="Search products by name..." 
-              className="w-full pl-11 pr-24 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50 transition-all text-gray-700 font-medium"
+              placeholder="Search products..." 
+              className="w-full pl-9 pr-4 py-1.5 bg-[#f6f8fa] border border-[#d0d7de] rounded-md text-sm focus:bg-white focus:border-[#0969da] focus:ring-3 focus:ring-[#0969da]/10 outline-none transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <Search className="absolute left-4 top-3.5 text-gray-400 w-5 h-5" />
-            <button type="submit" className="absolute right-2 top-2 bg-primary-600 text-white px-5 py-1.5 rounded-lg text-sm font-bold hover:bg-primary-700 transition-colors shadow-sm">
-              Search
-            </button>
           </form>
-
-          <div className="relative w-full md:w-1/3">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-none">
-              <Filter className="w-5 h-5 text-gray-400" />
-            </div>
-            <select
-              className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50 appearance-none text-gray-700 font-medium cursor-pointer"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              <option value="">All Categories</option>
-              {categories.map(cat => (
-                <option key={cat.category_id} value={cat.category_id}>{cat.name}</option>
-              ))}
-            </select>
-          </div>
-
+          <select
+            className="bg-[#f6f8fa] border border-[#d0d7de] rounded-md px-3 py-1.5 text-sm font-semibold outline-none cursor-pointer hover:bg-[#eff1f3]"
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+          >
+            <option value="">All Categories</option>
+            {categories.map(cat => <option key={cat.category_id} value={cat.category_id}>{cat.name}</option>)}
+          </select>
         </div>
-        {/* --- KẾT THÚC THANH TÌM KIẾM --- */}
 
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="w-10 h-10 animate-spin text-primary-500" />
-          </div>
-        ) : error ? (
-          <div className="flex flex-col items-center justify-center h-64 text-red-500 bg-red-50 rounded-xl border border-red-100">
-            <AlertCircle className="w-12 h-12 mb-3" />
-            <p className="text-lg font-medium">{error}</p>
-          </div>
+          <div className="flex justify-center py-20"><Loader2 className="animate-spin text-[#0969da]" /></div>
         ) : products.length === 0 ? (
-          <div className="text-center py-20 bg-surface rounded-xl shadow-sm border border-gray-100">
-            <p className="text-xl text-gray-500 font-medium">No products found.</p>
-            <p className="text-gray-400 mt-2">Try adjusting your search or filters!</p>
-          </div>
+          <div className="text-center py-20 border border-dashed border-[#d0d7de] rounded-lg text-[#6e7781]">No products found.</div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {products.map((product) => (
-              <ProductCard 
-                key={product.product_id} 
-                product={product} 
-                onAddToCart={handleAddToCart} 
-              />
-            ))}
-          </div>
+          <>
+            {/* Grid Sản phẩm hiển thị tối đa 8 item/trang */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {products.map(p => <ProductCard key={p.product_id} product={p} onAddToCart={handleAddToCart} />)}
+            </div>
+
+            {/* MỚI: Tích hợp Component phân trang */}
+            <Pagination 
+              currentPage={currentPage} 
+              totalPages={totalPages} 
+              onPageChange={(page) => {
+                setCurrentPage(page);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }} 
+            />
+          </>
         )}
       </main>
     </div>

@@ -1,8 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingBag, ShoppingCart, LogOut, ClipboardList, LogIn, User, X, ArrowLeft, Settings } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, LogOut, ClipboardList, User, X, Settings, LogIn } from 'lucide-react';
 import Login from '../../pages/auth/Login';
 import Register from '../../pages/auth/Register';
+import Button from '../common/Button';
+
+// Thành phần NavItem theo phong cách UI mới
+const NavItem = ({ children, onClick, className = '' }) => (
+  <div
+    onClick={onClick}
+    className={`group flex h-12 cursor-pointer flex-col items-center justify-center gap-4 px-4 transition-colors ${className}`}
+  >
+    <span className="text-sm font-bold text-[#6e7781] group-hover:text-[#1f2328]">
+      {children}
+    </span>
+  </div>
+);
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -18,164 +31,121 @@ const Navbar = () => {
       setIsSidebarOpen(true);
       setSidebarView('login');
       window.history.replaceState({}, document.title);
-    } else if (location.state?.openRegister) {
-      setIsSidebarOpen(true);
-      setSidebarView('register');
-      window.history.replaceState({}, document.title);
     }
   }, [location]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('username');
+    localStorage.clear();
     setIsSidebarOpen(false); 
-    setSidebarView('default');
     navigate('/');
+    window.location.reload();
   };
 
   const handleLoginSuccess = (role) => {
-    if (role === 'Admin') {
-      window.location.href = '/admin'; 
-    } else {
-      window.location.reload(); 
-    }
-  };
-
-  const getSidebarTitle = () => {
-    if (token) return "My Account";
-    if (sidebarView === 'login') return "Sign In";
-    if (sidebarView === 'register') return "Create Account";
-    return "Welcome"; 
+    if (role === 'Admin') navigate('/admin');
+    else window.location.reload();
   };
 
   return (
     <>
-      <nav className="bg-surface shadow-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            
-            {/* Logo */}
-            <div className="flex items-center space-x-6">
-              <Link to="/" className="flex items-center text-primary-600 font-bold text-xl hover:text-primary-700 transition-colors">
-                <ShoppingBag className="w-8 h-8 mr-2" />
-                DK-ECOM
-              </Link>
-            </div>
+      {/* Container bọc ngoài cùng để giữ vị trí sticky */}
+      <nav className="sticky top-0 z-40 w-full bg-white/80 backdrop-blur-md py-4 px-4">
+        {/* Modern Navbar Root: Áp dụng border, shadow và rounded từ mẫu UI */}
+        <div className="mx-auto flex w-full max-w-[1250px] flex-wrap items-center gap-4 rounded-md border border-solid border-[#d0d7de] bg-white shadow-md overflow-hidden">
+          
+          {/* Logo Slot */}
+          <div className="flex h-12 flex-col items-start justify-center px-6 border-r border-[#d0d7de] bg-[#f6f8fa]">
+            <Link to="/" className="flex items-center text-[#1f2328] font-black text-lg hover:text-[#0969da] transition-colors">
+              <ShoppingBag className="w-5 h-5 mr-2 text-[#0969da]" />
+              DK-ECOM
+            </Link>
+          </div>
 
-            {/* Icons Bar */}
-            <div className="flex items-center space-x-6">
-              <Link to="/cart" className="text-gray-500 hover:text-primary-600 transition-colors relative">
-                <ShoppingCart className="w-6 h-6" />
-              </Link>
+          {/* Children/Middle Slot (Navigation Links) */}
+          <div className="flex min-w-[320px] grow shrink-0 basis-0 flex-wrap items-center gap-2">
+            <NavItem onClick={() => navigate('/')}>Home</NavItem>
+          </div>
 
-              {/* Profile Trigger */}
-              <button 
-                onClick={() => setIsSidebarOpen(true)}
-                className="flex items-center space-x-2 text-gray-600 hover:text-primary-600 transition-colors bg-gray-50 px-4 py-1.5 rounded-full border border-gray-200"
-              >
-                <User className="w-5 h-5" />
-                <span className="hidden sm:inline font-medium text-sm">
-                  {token && username ? `Hello, ${username}` : "Sign In"}
-                </span>
-              </button>
-            </div>
-            
+          {/* Right Slot (Actions) */}
+          <div className="flex items-center gap-3 px-4">
+            <Link to="/cart" className="relative p-2 text-[#6e7781] hover:text-[#0969da] hover:bg-[#f6f8fa] rounded-full transition-all">
+              <ShoppingCart size={22} />
+            </Link>
+
+            <div className="h-6 w-px bg-[#d0d7de]" /> {/* Divider */}
+
+            <button 
+              onClick={() => { setSidebarView('default'); setIsSidebarOpen(true); }}
+              className="flex items-center gap-2 text-[#1f2328] hover:text-[#0969da] bg-[#f6f8fa] border border-[#d0d7de] px-4 py-1.5 rounded-md text-sm font-bold shadow-sm hover:bg-white transition-all"
+            >
+              <User size={18} className="text-[#0969da]" />
+              <span className="hidden sm:inline">
+                {token ? username : "Sign In"}
+              </span>
+            </button>
           </div>
         </div>
       </nav>
 
-      {/* SIDEBAR OVERLAY */}
-      {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm transition-opacity"
-          onClick={() => setIsSidebarOpen(false)}
-        ></div>
-      )}
-
-      {/* RIGHT SIDEBAR PANEL */}
+      {/* SIDEBAR PANEL - Giữ nguyên cấu trúc logic cũ */}
       <div 
-        className={`fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-[380px] bg-white border-l border-[#d0d7de] shadow-2xl z-50 transform transition-transform duration-500 ease-in-out ${
           isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="p-5 flex justify-between items-center border-b border-gray-100 bg-surface">
-          <div className="flex items-center">
-            {sidebarView !== 'default' && !token && (
-              <button onClick={() => setSidebarView('default')} className="p-2 -ml-2 mr-2 text-gray-400 hover:text-gray-800 transition-colors rounded-full hover:bg-gray-100">
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-            )}
-            <h2 className="text-xl font-bold text-gray-800">
-              {getSidebarTitle()}
-            </h2>
-          </div>
-          <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
-            <X className="w-6 h-6" />
+        <div className="p-5 flex justify-between items-center border-b border-[#d0d7de] bg-[#f6f8fa]">
+          <h2 className="text-sm font-black text-[#1f2328] uppercase tracking-widest">
+            {token ? "Account Overview" : sidebarView === 'login' ? "Welcome Back" : sidebarView === 'register' ? "Join Us" : "Navigation"}
+          </h2>
+          <button onClick={() => setIsSidebarOpen(false)} className="p-2 hover:bg-[#d0d7de]/40 rounded-full transition-colors">
+            <X className="w-5 h-5 text-[#6e7781]" />
           </button>
         </div>
         
-        <div className="p-6 flex flex-col h-[calc(100vh-80px)] overflow-y-auto custom-scrollbar">
+        <div className="p-6 flex flex-col h-full overflow-y-auto">
           {token ? (
-            // --- KHU VỰC USER ĐÃ ĐĂNG NHẬP ---
-            <div className="space-y-2 flex-1 flex flex-col">
-              <div className="p-4 bg-primary-50 rounded-xl mb-6">
-                <p className="text-sm text-gray-500">Welcome back,</p>
-                <p className="text-xl font-black text-primary-700">{username}</p>
+            <div className="space-y-2">
+              <div className="flex items-center p-4 border border-[#d0d7de] rounded-lg mb-6 bg-gradient-to-br from-[#f6f8fa] to-white shadow-sm">
+                <div className="w-12 h-12 bg-[#0969da] text-white rounded-md flex items-center justify-center font-black text-xl shadow-md mr-4">
+                  {username ? username[0].toUpperCase() : 'U'}
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-[#6e7781] uppercase tracking-tighter">Signed in as</p>
+                  <p className="text-lg font-black text-[#1f2328]">{username}</p>
+                </div>
               </div>
-
-              {/* MỚI THÊM: Menu Account Settings */}
-              <Link to="/profile" onClick={() => setIsSidebarOpen(false)} className="flex items-center p-4 text-gray-700 hover:bg-gray-50 rounded-xl transition-colors font-semibold">
-                <Settings className="w-5 h-5 mr-3 text-primary-500" /> Account Settings
+              
+              <Link to="/profile" onClick={() => setIsSidebarOpen(false)} className="flex items-center p-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] hover:text-[#0969da] rounded-md font-bold transition-colors">
+                <Settings className="w-4 h-4 mr-3" /> Account Settings
               </Link>
-
-              <Link to="/my-orders" onClick={() => setIsSidebarOpen(false)} className="flex items-center p-4 text-gray-700 hover:bg-gray-50 rounded-xl transition-colors font-semibold">
-                <ClipboardList className="w-5 h-5 mr-3 text-primary-500" /> My Orders
+              <Link to="/my-orders" onClick={() => setIsSidebarOpen(false)} className="flex items-center p-3 text-sm text-[#1f2328] hover:bg-[#f6f8fa] hover:text-[#0969da] rounded-md font-bold transition-colors">
+                <ClipboardList className="w-4 h-4 mr-3" /> My Orders
               </Link>
               
-              {localStorage.getItem('role') === 'Admin' && (
-                <Link to="/admin" onClick={() => setIsSidebarOpen(false)} className="flex items-center p-4 text-gray-700 hover:bg-gray-50 rounded-xl transition-colors font-semibold">
-                  <ShoppingBag className="w-5 h-5 mr-3 text-primary-500" /> Admin Dashboard
-                </Link>
-              )}
-
-              <div className="mt-auto border-t border-gray-100 pt-6">
-                <button onClick={handleLogout} className="flex items-center justify-center w-full p-4 text-red-500 hover:bg-red-50 rounded-xl transition-colors font-bold">
-                  <LogOut className="w-5 h-5 mr-3" /> Logout
-                </button>
-              </div>
+              <button onClick={handleLogout} className="flex items-center w-full p-3 text-sm text-[#cf222e] hover:bg-[#fff8f7] rounded-md font-bold mt-6 pt-6 border-t border-[#d0d7de] transition-colors">
+                <LogOut className="w-4 h-4 mr-3" /> Sign Out
+              </button>
             </div>
           ) : (
-            // --- KHU VỰC CHƯA ĐĂNG NHẬP ---
-            <>
+            <div className="mt-2">
               {sidebarView === 'default' && (
-                <div className="space-y-4 flex-1 mt-4">
-                  <p className="text-gray-500 mb-8 text-sm text-center">Sign in to track orders, manage your cart, and checkout seamlessly.</p>
-                  <button onClick={() => setSidebarView('login')} className="flex items-center justify-center w-full py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-md shadow-primary-200">
-                    <LogIn className="w-5 h-5 mr-2" /> Sign In
-                  </button>
-                  <button onClick={() => setSidebarView('register')} className="flex items-center justify-center w-full py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-colors">
-                    Create Account
-                  </button>
+                <div className="space-y-4">
+                  <div className="py-10 text-center">
+                    <ShoppingBag size={48} className="mx-auto text-[#d0d7de] mb-4" />
+                    <p className="text-gray-500 text-sm px-10">Sign in to sync your cart and track your favorite items across devices.</p>
+                  </div>
+                  <Button onClick={() => setSidebarView('login')} fullWidth className="py-3 shadow-md">Sign In</Button>
+                  <Button onClick={() => setSidebarView('register')} fullWidth variant="outline" className="py-3">Create Account</Button>
                 </div>
               )}
-
-              {sidebarView === 'login' && (
-                <Login 
-                  onLoginSuccess={handleLoginSuccess} 
-                  switchToRegister={() => setSidebarView('register')} 
-                />
-              )}
-
-              {sidebarView === 'register' && (
-                <Register 
-                  switchToLogin={() => setSidebarView('login')} 
-                />
-              )}
-            </>
+              {sidebarView === 'login' && <Login onLoginSuccess={handleLoginSuccess} switchToRegister={() => setSidebarView('register')} />}
+              {sidebarView === 'register' && <Register switchToLogin={() => setSidebarView('login')} />}
+            </div>
           )}
         </div>
       </div>
+      {/* Overlay */}
+      {isSidebarOpen && <div className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-40 animate-fade-in" onClick={() => setIsSidebarOpen(false)}></div>}
     </>
   );
 };

@@ -7,66 +7,68 @@ const AdminLayout = () => {
   const location = useLocation();
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    navigate('/login');
+    localStorage.clear();
+    navigate('/');
+    window.location.reload();
   };
 
-  // Danh sách các menu điều hướng
   const navItems = [
-    { path: '/admin', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
-    // Các trang này chúng ta sẽ tạo ở bước sau:
-    { path: '/admin/categories', icon: <Tags size={20} />, label: 'Categories' },
-    { path: '/admin/products', icon: <Package size={20} />, label: 'Products' },
-    { path: '/admin/orders', icon: <Truck size={20} />, label: 'Manage Orders' }, // MỚI
-    { path: '/admin/reviews', icon: <MessageSquareWarning size={20} />, label: 'Fake Reviews (AI)' },
+    { path: '/admin', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
+    { path: '/admin/categories', icon: <Tags size={18} />, label: 'Categories' },
+    { path: '/admin/products', icon: <Package size={18} />, label: 'Products' },
+    { path: '/admin/orders', icon: <Truck size={18} />, label: 'Orders' },
+    { path: '/admin/reviews', icon: <MessageSquareWarning size={18} />, label: 'AI Reviews' },
   ];
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
-      {/* Sidebar bên trái */}
-      <aside className="w-64 bg-surface border-r border-gray-200 flex flex-col shadow-sm">
-        <div className="p-6 flex items-center text-primary-600 font-bold text-xl border-b border-gray-100">
-          <ShoppingBag className="w-8 h-8 mr-2" />
-          Admin Panel
+    <div className="flex h-screen bg-white overflow-hidden font-sans">
+      {/* Sidebar bên trái chuẩn GitHub */}
+      <aside className="w-64 bg-[#f6f8fa] border-r border-[#d0d7de] flex flex-col">
+        <div className="p-6 border-b border-[#d0d7de] bg-white">
+          <Link to="/" className="flex items-center text-[#1f2328] font-black text-xl">
+            <div className="bg-[#1f2328] p-1.5 rounded-md mr-3">
+              <ShoppingBag className="w-5 h-5 text-white" />
+            </div>
+            ADMIN
+          </Link>
         </div>
         
-        <nav className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
+        <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+          <h3 className="px-3 text-[10px] font-bold text-[#6e7781] uppercase mb-2 tracking-wider">Management</h3>
           {navItems.map((item) => {
-            // Xác định xem menu nào đang được chọn
             const isActive = location.pathname === item.path || (location.pathname.startsWith(item.path) && item.path !== '/admin');
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center px-4 py-3 rounded-lg transition-all duration-200 font-medium ${
+                className={`flex items-center px-3 py-2 rounded-md transition-all duration-200 text-sm font-medium border border-transparent ${
                   isActive 
-                    ? 'bg-primary-50 text-primary-600 shadow-sm' 
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-primary-500'
+                    ? 'bg-white border-[#d0d7de] text-[#1f2328] border-l-4 border-l-[#0969da] shadow-sm' 
+                    : 'text-[#1f2328] hover:bg-[#eff1f3]'
                 }`}
               >
-                {item.icon}
-                <span className="ml-3">{item.label}</span>
+                <span className={`${isActive ? 'text-[#0969da]' : 'text-[#6e7781]'} mr-3`}>{item.icon}</span>
+                {item.label}
               </Link>
             );
           })}
         </nav>
 
-        {/* Nút Đăng xuất ở cuối Sidebar */}
-        <div className="p-4 border-t border-gray-100">
+        <div className="p-4 border-t border-[#d0d7de] bg-white">
           <button
             onClick={handleLogout}
-            className="flex items-center w-full px-4 py-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors font-medium"
+            className="flex items-center w-full px-3 py-2 text-sm text-[#cf222e] hover:bg-[#fff8f7] rounded-md transition-colors font-bold"
           >
-            <LogOut size={20} />
-            <span className="ml-3">Logout</span>
+            <LogOut size={18} className="mr-3" /> Logout
           </button>
         </div>
       </aside>
 
-      {/* Khu vực Nội dung chính (Outlet sẽ render Dashboard, Products... vào đây) */}
-      <main className="flex-1 overflow-y-auto p-8">
-        <Outlet />
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto bg-white p-10">
+        <div className="max-w-6xl mx-auto">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

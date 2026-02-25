@@ -11,13 +11,15 @@ const Button = ({
   className = '',
   fullWidth = false
 }) => {
-  const baseStyle = "flex justify-center items-center px-4 py-2 rounded-lg font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed";
+  const baseStyle = "flex justify-center items-center px-4 py-1.5 rounded-md font-semibold text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-60 disabled:cursor-not-allowed border";
   const widthStyle = fullWidth ? "w-full" : "";
 
   const variants = {
-    primary: "bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-sm",
-    outline: "border-2 border-primary-600 text-primary-600 hover:bg-primary-50 focus:ring-primary-500",
-    secondary: "bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-400"
+    // Kiểu nút Primary của GitHub (Xanh dương)
+    primary: "bg-[#0969da] text-white border-[#0550ae] hover:bg-[#0861c5] focus:ring-[#0969da] shadow-sm",
+    // Kiểu nút mặc định (Trắng viền xám)
+    outline: "bg-[#f6f8fa] text-[#24292f] border-[#d0d7de] hover:bg-[#f3f4f6] focus:ring-gray-300",
+    secondary: "bg-[#24292f] text-white border-[#1b1f24] hover:bg-[#2c333a] focus:ring-gray-500"
   };
 
   return (
@@ -27,7 +29,7 @@ const Button = ({
       disabled={disabled || isLoading}
       className={`${baseStyle} ${widthStyle} ${variants[variant]} ${className}`}
     >
-      {isLoading && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}
+      {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
       {children}
     </button>
   );

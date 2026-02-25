@@ -5,7 +5,8 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import api from '../../services/api';
 import { useToast } from '../../context/ToastContext';
-import { CreditCard, Truck, CheckCircle, ShieldCheck, Smartphone } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
+import Breadcrumbs from '../../components/common/Breadcrumbs';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -42,25 +43,36 @@ const Checkout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       <Navbar />
-      <main className="max-w-3xl mx-auto px-4 py-10">
-        <h1 className="text-3xl font-black mb-8 flex items-center"><ShieldCheck className="mr-3 text-primary-600" /> Secure Checkout</h1>
-        <div className="bg-surface p-10 rounded-2xl border shadow-sm">
+      <main className="max-w-3xl mx-auto px-4 py-8">
+        <Breadcrumbs>
+          <Breadcrumbs.Item to="/">Home</Breadcrumbs.Item>
+          <Breadcrumbs.Divider />
+          <Breadcrumbs.Item to="/cart">Cart</Breadcrumbs.Item>
+          <Breadcrumbs.Divider />
+          <Breadcrumbs.Item active>Checkout</Breadcrumbs.Item>
+        </Breadcrumbs>
+
+        <h1 className="text-2xl font-black mb-8 flex items-center text-[#1f2328]">
+          <ShieldCheck className="mr-3 text-[#0969da]" size={28} /> Secure Checkout
+        </h1>
+
+        <div className="bg-white p-10 rounded-xl border border-[#d0d7de] shadow-sm">
           <form onSubmit={handleCheckout} className="space-y-8">
             <Input label="Shipping Address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="House no, Street, City..." required />
             <div>
-              <h2 className="text-xl font-bold mb-4">Payment Method</h2>
+              <h2 className="text-lg font-bold mb-4 text-[#1f2328]">Payment Method</h2>
               <div className="grid gap-4">
                 {['COD', 'ONLINE', 'MOMO'].map(m => (
-                  <label key={m} className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all ${paymentMethod === m ? 'border-primary-500 bg-primary-50' : 'hover:bg-gray-50'}`}>
-                    <input type="radio" name="pay" checked={paymentMethod === m} onChange={() => setPaymentMethod(m)} className="w-5 h-5 text-primary-600" />
-                    <span className="ml-4 font-bold text-gray-700">{m === 'COD' ? 'Cash on Delivery' : m === 'ONLINE' ? 'VNPay / Banking' : 'Ví MoMo'}</span>
+                  <label key={m} className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${paymentMethod === m ? 'border-[#0969da] bg-[#ddf4ff]/30' : 'border-[#d0d7de] hover:bg-[#f6f8fa]'}`}>
+                    <input type="radio" name="pay" checked={paymentMethod === m} onChange={() => setPaymentMethod(m)} className="w-4 h-4 text-[#0969da]" />
+                    <span className="ml-4 font-bold text-[#1f2328]">{m === 'COD' ? 'Cash on Delivery' : m === 'ONLINE' ? 'VNPay / Banking' : 'Ví MoMo'}</span>
                   </label>
                 ))}
               </div>
             </div>
-            <Button type="submit" fullWidth isLoading={loading} className="py-4 text-lg font-bold shadow-lg shadow-primary-100">Confirm Order</Button>
+            <Button type="submit" fullWidth isLoading={loading} className="py-4 text-lg font-bold">Confirm Order</Button>
           </form>
         </div>
       </main>

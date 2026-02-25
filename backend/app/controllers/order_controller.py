@@ -2,6 +2,7 @@ from flask import request, jsonify
 from app.models.models import db, Cart, CartItem, Order, OrderDetail, Product, User
 from flask_jwt_extended import get_jwt_identity
 from datetime import datetime
+import math # Import math để tính toán phân trang
 
 # --- HÀM HELPER NỘI BỘ (Dùng chung cho Admin và Customer) ---
 def _restore_items_to_cart(order):
@@ -34,6 +35,7 @@ def _restore_items_to_cart(order):
 # --- CÁC HÀM API ---
 
 def checkout():
+    """Xử lý đặt hàng từ giỏ hàng hiện tại."""
     user_id = get_jwt_identity()
     data = request.get_json() or {}
     shipping_address = data.get('shipping_address', '')
@@ -91,6 +93,7 @@ def checkout():
         return jsonify({"message": "An error occurred"}), 500
 
 def confirm_payment(order_id):
+    """Xác nhận thanh toán cho đơn hàng."""
     user_id = get_jwt_identity()
     data = request.get_json() or {}
     transaction_id = data.get('transaction_id', 'MOCK-TXN-123')
@@ -122,13 +125,9 @@ def cancel_order_and_restore_cart(order_id):
         return jsonify({"message": "Cannot cancel a paid order"}), 400
 
     try:
-        # Gọi helper để hoàn hàng
         _restore_items_to_cart(order)
-        
-        # Xóa các chi tiết đơn hàng và đơn hàng chính (Vì đây là đơn lỗi ở bước thanh toán)
         OrderDetail.query.filter_by(order_id=order_id).delete()
         db.session.delete(order)
-        
         db.session.commit()
         return jsonify({"message": "Order removed and items restored to cart"}), 200
     except Exception as e:
@@ -144,7 +143,6 @@ def update_order_status(order_id):
     if not order:
         return jsonify({"message": "Order not found"}), 404
 
-    # LOGIC MỚI: Nếu Admin đổi trạng thái thành 'cancelled', thực hiện hoàn kho và hoàn giỏ hàng
     if new_status == 'cancelled' and order.order_status != 'cancelled':
         _restore_items_to_cart(order)
         
@@ -155,10 +153,29 @@ def update_order_status(order_id):
     db.session.commit()
     return jsonify({"message": f"Order #{order_id} updated to {new_status}"}), 200
 
-# (Các hàm get_user_orders và get_all_orders giữ nguyên như cũ)
 def get_user_orders():
+    """Lấy danh sách đơn hàng của khách hàng với tính năng phân trang."""
     user_id = get_jwt_identity()
-    orders = Order.query.filter_by(user_id=user_id).order_by(Order.order_date.desc()).all()
+    
+    # 1. Lấy thông số phân trang từ Query Params
+    try:
+        page = int(request.args.get('page', 1))
+        # THAY ĐỔI: Hiển thị 5 đơn hàng mỗi trang theo yêu cầu
+        per_page = int(request.args.get('per_page', 5)) 
+    except ValueError:
+        page = 1
+        per_page = 5
+
+    # 2. Xây dựng Query cơ bản
+    query = Order.query.filter_by(user_id=user_id).order_by(Order.order_date.desc())
+    
+    # 3. Tính toán phân trang
+    total_count = query.count()
+    total_pages = math.ceil(total_count / per_page)
+    
+    # 4. Thực hiện truy vấn với Limit/Offset
+    orders = query.offset((page - 1) * per_page).limit(per_page).all()
+    
     result = []
     for o in orders:
         result.append({
@@ -170,10 +187,35 @@ def get_user_orders():
             "order_date": o.order_date.strftime('%Y-%m-%d %H:%M:%S'),
             "shipping_address": o.shipping_address
         })
-    return jsonify({"orders": result}), 200
+        
+    return jsonify({
+        "orders": result,
+        "total_pages": total_pages,
+        "current_page": page,
+        "total_orders": total_count,
+        "status": "success"
+    }), 200
 
 def get_all_orders():
-    orders = Order.query.order_by(Order.order_date.desc()).all()
+    """Lấy danh sách tất cả đơn hàng cho Admin với tính năng phân trang."""
+    # 1. Lấy thông số phân trang
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10)) # Admin mặc định xem 10 đơn/trang
+    except ValueError:
+        page = 1
+        per_page = 10
+
+    # 2. Xây dựng Query
+    query = Order.query.order_by(Order.order_date.desc())
+    
+    # 3. Tính toán phân trang
+    total_count = query.count()
+    total_pages = math.ceil(total_count / per_page)
+    
+    # 4. Thực hiện truy vấn
+    orders = query.offset((page - 1) * per_page).limit(per_page).all()
+    
     result = []
     for o in orders:
         user = User.query.get(o.user_id)
@@ -187,4 +229,11 @@ def get_all_orders():
             "order_date": o.order_date.strftime('%Y-%m-%d %H:%M:%S'),
             "shipping_address": o.shipping_address
         })
-    return jsonify({"orders": result}), 200
+        
+    return jsonify({
+        "orders": result,
+        "total_pages": total_pages,
+        "current_page": page,
+        "total_orders": total_count,
+        "status": "success"
+    }), 200
