@@ -1,5 +1,6 @@
 from flask import request, jsonify
-from app.models.models import db, Cart, CartItem, Order, OrderDetail, Product, User
+# MỚI: Thêm Notification vào danh sách import
+from app.models.models import db, Cart, CartItem, Order, OrderDetail, Product, User, Notification
 from flask_jwt_extended import get_jwt_identity
 from datetime import datetime
 import math
@@ -98,19 +99,40 @@ def update_order_status(order_id):
         _restore_items_to_cart(order)
     order.order_status = new_status
     if new_status == 'completed': order.payment_status = 'paid'
+    
+    # MỚI: Tạo thông báo cho khách hàng
+    notif = Notification(
+        user_id=order.user_id,
+        order_id=order.order_id,
+        message=f"Order #{order.order_id} status has been updated to '{new_status.upper()}'."
+    )
+    db.session.add(notif)
     db.session.commit()
     
-    # MỚI: Phát sóng (Broadcast) sự kiện thay đổi trạng thái tới toàn bộ client
+    # Phát sóng (Broadcast) sự kiện thay đổi trạng thái tới toàn bộ client
     socketio.emit('order_status_changed', {
         'order_id': order.order_id,
         'new_status': order.order_status,
         'payment_status': order.payment_status
     })
     
+    # MỚI: Bắn WebSocket ĐÍCH DANH cho khách hàng để chuông reo lên
+    socketio.emit('new_notification', {
+        "id": notif.id,
+        "order_id": notif.order_id,
+        "message": notif.message,
+        "is_read": False,
+        "date": "Just now"
+    }, to=f'user_{order.user_id}')
+    
+    # MỚI: Nếu đơn hàng bị HỦY (hàng được trả về giỏ), báo cho máy Khách hàng tự động tải lại giỏ hàng
+    if new_status == 'cancelled':
+        socketio.emit('cart_updated', to=f'user_{order.user_id}')
+    
     return jsonify({"message": "Status updated"}), 200
 
 def get_user_orders():
-    """Lấy đơn hàng của khách hàng (phân trang 5 đơn/trang) kèm thông tin sản phẩm."""
+    # """Lấy đơn hàng của khách hàng (phân trang 5 đơn/trang) kèm thông tin sản phẩm."""
     user_id = get_jwt_identity()
     page = int(request.args.get('page', 1))
     per_page = int(request.args.get('per_page', 5))
@@ -204,3 +226,28 @@ def get_order_by_id(order_id):
         "items": items
     }
     return jsonify({"order": result, "status": "success"}), 200
+
+# ================= MỚI: API THÔNG BÁO =================
+def get_my_notifications():
+    """Lấy danh sách thông báo của user đang đăng nhập"""
+    user_id = get_jwt_identity()
+    notifs = Notification.query.filter_by(user_id=user_id).order_by(Notification.created_at.desc()).limit(20).all()
+    result = []
+    for n in notifs:
+        result.append({
+            "id": n.id,
+            "order_id": n.order_id,
+            "message": n.message,
+            "is_read": n.is_read,
+            "date": n.created_at.strftime('%b %d, %Y %H:%M')
+        })
+    # Trả về kèm user_id để Frontend dùng kết nối private Room
+    return jsonify({"notifications": result, "user_id": user_id, "status": "success"}), 200
+
+def mark_notification_read(notif_id):
+    """Đánh dấu 1 thông báo là đã đọc"""
+    notif = Notification.query.get(notif_id)
+    if notif:
+        notif.is_read = True
+        db.session.commit()
+    return jsonify({"status": "success"}), 200

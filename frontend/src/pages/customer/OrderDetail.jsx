@@ -28,24 +28,30 @@ const OrderDetail = () => {
 
   // MỚI: Lắng nghe Real-time cho riêng đơn hàng này
   useEffect(() => {
+    let isMounted = true;
     const socket = io("http://localhost:5000");
 
     socket.on("order_status_changed", (data) => {
+      if (!isMounted) return;
+
       setOrder((prevOrder) => {
-        // Chỉ cập nhật nếu sự kiện bắn về khớp với mã đơn hàng đang xem
-        if (prevOrder && prevOrder.order_id === data.order_id) {
+        // Ép cả 2 ID về kiểu Chuỗi (String) để so sánh an toàn tuyệt đối
+        if (prevOrder && String(prevOrder.order_id) === String(data.order_id)) {
           return {
             ...prevOrder,
-            order_status: data.new_status,
+            order_status: data.order_status,
             payment_status: data.payment_status,
           };
         }
-        return prevOrder;
+        return prevOrder; // Giữ nguyên trạng thái nếu không khớp ID
       });
     });
 
-    return () => socket.disconnect();
-  }, []);
+    return () => {
+      isMounted = false;
+      if (socket) socket.disconnect();
+    };
+  }, [id]); // Thêm biến id vào đây để hook luôn lấy đúng mã đơn hàng trên URL
 
   if (loading)
     return (

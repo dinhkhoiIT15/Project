@@ -38,6 +38,13 @@ def create_app():
     def on_leave(data):
         room = data['room']
         leave_room(room)
+
+    # MỚI: Xử lý sự kiện User VÀO phòng cá nhân để nhận thông báo
+    @socketio.on('join_personal')
+    def on_join_personal(data):
+        user_id = data.get('user_id')
+        if user_id:
+            join_room(f"user_{user_id}")
     
     # Đăng ký các đường dẫn (Routes) vào ứng dụng
     app.register_blueprint(auth_bp) # MỚI THÊM: Đăng ký auth routes

@@ -71,3 +71,13 @@ class CartItem(db.Model):
     cart_id = db.Column(db.Integer, db.ForeignKey('carts.cart_id'))
     product_id = db.Column(db.Integer, db.ForeignKey('products.product_id'))
     quantity = db.Column(db.Integer, default=1)
+
+# MỚI: Bảng thông báo trạng thái đơn hàng
+class Notification(db.Model):
+    __tablename__ = 'notifications'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id')) # Người NHẬN thông báo
+    order_id = db.Column(db.Integer) # Để click vào sẽ nhảy tới trang chi tiết đơn hàng đó
+    message = db.Column(db.Text)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

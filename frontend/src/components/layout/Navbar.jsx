@@ -11,12 +11,14 @@ import {
   Search,
   Loader2,
   Package,
+  Bell,
 } from "lucide-react";
 import Login from "../../pages/auth/Login";
 import Register from "../../pages/auth/Register";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext"; // MỚI IMPORT
 import api from "../../services/api";
+import { io } from "socket.io-client"; // MỚI IMPORT
 
 const NavItem = ({ children, onClick, className = "" }) => (
   <div
@@ -36,7 +38,7 @@ const Navbar = () => {
   const [sidebarView, setSidebarView] = useState("login");
 
   const { user, isAuthenticated, logout } = useAuth();
-  const { cartCount } = useCart(); // MỚI: Lấy số lượng giỏ hàng
+  const { cartCount, fetchCartCount } = useCart(); // MỚI: Thêm fetchCartCount
 
   // ----- STATES CHO LIVE SEARCH -----
   const [searchTerm, setSearchTerm] = useState("");
@@ -44,6 +46,75 @@ const Navbar = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const searchRef = useRef(null);
+
+  // ----- MỚI: THÔNG BÁO STATE -----
+  const [notifications, setNotifications] = useState([]);
+  const [showNotif, setShowNotif] = useState(false);
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const notifRef = useRef(null);
+
+  // MỚI: Gọi API lấy thông báo và kết nối Socket ngầm khi User đã đăng nhập
+  useEffect(() => {
+    let socketInstance = null;
+    let isMounted = true; // Cờ kiểm tra trạng thái component
+
+    if (isAuthenticated) {
+      api
+        .get("/orders/notifications")
+        .then((res) => {
+          if (!isMounted) return; // Nếu React đã tháo component, DỪNG LẠI KHÔNG TẠO SOCKET NỮA!
+
+          setNotifications(res.data.notifications || []);
+          const myUserId = res.data.user_id;
+
+          // Kết nối phòng bí mật
+          socketInstance = io("http://localhost:5000");
+          socketInstance.emit("join_personal", { user_id: myUserId });
+
+          socketInstance.on("new_notification", (notif) => {
+            setNotifications((prev) => {
+              // CHỐNG TRÙNG LẶP 100%: Kiểm tra xem thông báo này đã có trong danh sách chưa
+              if (prev.some((n) => n.id === notif.id)) return prev;
+              return [notif, ...prev];
+            });
+          });
+
+          // MỚI: Lắng nghe sự kiện giỏ hàng được hoàn trả
+          socketInstance.on("cart_updated", () => {
+            fetchCartCount();
+          });
+        })
+        .catch((err) => console.error(err));
+    }
+
+    // Hàm dọn dẹp (Cleanup)
+    return () => {
+      isMounted = false;
+      if (socketInstance) socketInstance.disconnect();
+    };
+  }, [isAuthenticated]);
+
+  // Click ra ngoài thì tắt dropdown chuông
+  useEffect(() => {
+    const handleClickOutsideNotif = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target))
+        setShowNotif(false);
+    };
+    document.addEventListener("mousedown", handleClickOutsideNotif);
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutsideNotif);
+  }, []);
+
+  const handleNotifClick = async (notif) => {
+    if (!notif.is_read) {
+      await api.put(`/orders/notifications/${notif.id}/read`);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n)),
+      );
+    }
+    setShowNotif(false);
+    navigate(`/order/${notif.order_id}`); // Điều hướng thẳng tới trang chi tiết đơn
+  };
 
   useEffect(() => {
     const query = new URLSearchParams(location.search).get("search");
@@ -205,6 +276,65 @@ const Navbar = () => {
             </div>
 
             <div className="h-5 w-px bg-[#d0d7de] mx-1" />
+
+            {/* MỚI: QUẢ CHUÔNG THÔNG BÁO */}
+            {isAuthenticated && (
+              <div className="relative flex items-center" ref={notifRef}>
+                <button
+                  onClick={() => setShowNotif(!showNotif)}
+                  className="relative p-2 text-[#6e7781] hover:text-[#0969da] hover:bg-[#f6f8fa] rounded-full transition-all"
+                >
+                  <Bell
+                    size={20}
+                    className={
+                      unreadCount > 0 ? "text-[#0969da] fill-[#0969da]/10" : ""
+                    }
+                  />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#cf222e] px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Dropdown Danh sách Thông báo */}
+                {showNotif && (
+                  <div className="absolute top-full mt-3 right-0 w-[320px] bg-white border border-[#d0d7de] rounded-xl shadow-2xl z-50 overflow-hidden animate-fade-in">
+                    <div className="p-4 border-b border-[#d0d7de] flex justify-between items-center bg-white sticky top-0">
+                      <h3 className="text-lg font-black text-[#1f2328]">
+                        Notifications
+                      </h3>
+                    </div>
+
+                    <ul className="max-h-[350px] overflow-y-auto bg-white">
+                      {notifications.length === 0 ? (
+                        <div className="p-8 text-center text-[#6e7781] font-medium text-sm">
+                          No notifications yet.
+                        </div>
+                      ) : (
+                        notifications.map((notif) => (
+                          <li
+                            key={notif.id}
+                            onClick={() => handleNotifClick(notif)}
+                            className={`flex flex-col gap-1 p-4 hover:bg-[#f6f8fa] cursor-pointer border-b border-[#d0d7de]/50 last:border-0 transition-colors ${!notif.is_read ? "bg-[#e7f0fd]/30" : ""}`}
+                          >
+                            <p className="text-[14px] leading-tight text-[#1f2328]">
+                              <span className="font-bold">System: </span>
+                              {notif.message}
+                            </p>
+                            <span
+                              className={`text-[11px] font-bold mt-1 ${!notif.is_read ? "text-[#0969da]" : "text-[#6e7781]"}`}
+                            >
+                              {notif.date}
+                            </span>
+                          </li>
+                        ))
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* MỚI: Thiết kế Badge giỏ hàng đè lên Icon */}
             <Link

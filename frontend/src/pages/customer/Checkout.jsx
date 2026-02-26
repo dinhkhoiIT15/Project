@@ -5,12 +5,14 @@ import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
+import { useCart } from "../../context/CartContext"; // MỚI: Thêm useCart
 import { ShieldCheck, Truck } from "lucide-react";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { fetchCartCount } = useCart(); // MỚI: Lấy hàm cập nhật giỏ hàng
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -43,6 +45,7 @@ const Checkout = () => {
       });
 
       addToast("Order placed successfully! Thank you.", "success");
+      fetchCartCount(); // MỚI: Lập tức cập nhật lại số chấm đỏ trên giỏ hàng
       // Chuyển hướng người dùng về trang danh sách đơn hàng sau khi đặt thành công
       navigate("/my-orders");
     } catch (err) {
