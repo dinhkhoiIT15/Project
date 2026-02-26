@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "../../components/layout/Navbar";
+import { io } from "socket.io-client"; // MỚI IMPORT
 import api from "../../services/api";
 import { Clock, MapPin, CreditCard, Package, ArrowLeft } from "lucide-react";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
@@ -24,6 +25,27 @@ const OrderDetail = () => {
     };
     fetchOrderDetail();
   }, [id]);
+
+  // MỚI: Lắng nghe Real-time cho riêng đơn hàng này
+  useEffect(() => {
+    const socket = io("http://localhost:5000");
+
+    socket.on("order_status_changed", (data) => {
+      setOrder((prevOrder) => {
+        // Chỉ cập nhật nếu sự kiện bắn về khớp với mã đơn hàng đang xem
+        if (prevOrder && prevOrder.order_id === data.order_id) {
+          return {
+            ...prevOrder,
+            order_status: data.new_status,
+            payment_status: data.payment_status,
+          };
+        }
+        return prevOrder;
+      });
+    });
+
+    return () => socket.disconnect();
+  }, []);
 
   if (loading)
     return (

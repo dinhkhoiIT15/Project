@@ -3,6 +3,7 @@ from app.models.models import db, Cart, CartItem, Order, OrderDetail, Product, U
 from flask_jwt_extended import get_jwt_identity
 from datetime import datetime
 import math
+from app.extensions import socketio # MỚI IMPORT VÀO ĐÂY
 
 # --- HÀM HELPER NỘI BỘ ---
 def _restore_items_to_cart(order):
@@ -75,6 +76,12 @@ def checkout():
         
     try:
         db.session.commit()
+        
+        # MỚI: Phát tín hiệu có đơn hàng mới cho toàn bộ hệ thống (để Admin nhận)
+        socketio.emit('new_order_placed', {
+            'message': 'A new order has been placed'
+        })
+        
         return jsonify({"message": "Order placed successfully", "order_id": new_order.order_id}), 201
     except Exception as e:
         db.session.rollback()
@@ -92,6 +99,14 @@ def update_order_status(order_id):
     order.order_status = new_status
     if new_status == 'completed': order.payment_status = 'paid'
     db.session.commit()
+    
+    # MỚI: Phát sóng (Broadcast) sự kiện thay đổi trạng thái tới toàn bộ client
+    socketio.emit('order_status_changed', {
+        'order_id': order.order_id,
+        'new_status': order.order_status,
+        'payment_status': order.payment_status
+    })
+    
     return jsonify({"message": "Status updated"}), 200
 
 def get_user_orders():

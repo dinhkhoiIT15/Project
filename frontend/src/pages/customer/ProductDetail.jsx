@@ -5,6 +5,7 @@ import Button from "../../components/common/Button";
 import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
 import { useCart } from "../../context/CartContext"; // MỚI IMPORT
+import { io } from "socket.io-client"; // MỚI IMPORT
 import {
   Loader2,
   Star,
@@ -49,6 +50,39 @@ const ProductDetail = () => {
 
   useEffect(() => {
     fetchReviews();
+
+    // MỚI: KẾT NỐI WEBSOCKET
+    const socket = io("http://localhost:5000");
+
+    // Vừa vào trang là xin gia nhập "Phòng" của sản phẩm này
+    socket.on("connect", () => {
+      socket.emit("join", { room: `product_${id}` });
+    });
+
+    // Lắng nghe sự kiện "new_review" từ Backend trả về
+    socket.on("new_review", (newReview) => {
+      // 1. Chèn comment mới lên đầu danh sách
+      setReviews((prev) => [newReview, ...prev]);
+
+      // 2. Tự động tính toán lại số lượng và Số sao trung bình
+      setProduct((prevProduct) => {
+        if (!prevProduct) return prevProduct;
+        const newCount = prevProduct.review_count + 1;
+        const newTotalStars =
+          prevProduct.avg_rating * prevProduct.review_count + newReview.rating;
+        return {
+          ...prevProduct,
+          review_count: newCount,
+          avg_rating: newTotalStars / newCount,
+        };
+      });
+    });
+
+    // Rời phòng khi chuyển sang trang khác
+    return () => {
+      socket.emit("leave", { room: `product_${id}` });
+      socket.disconnect();
+    };
   }, [id]);
 
   // MỚI: Hàm xử lý khi người dùng ấn Submit Review
@@ -69,9 +103,9 @@ const ProductDetail = () => {
         rating: newReviewRating,
       });
       addToast("Review submitted successfully!", "success");
-      setNewReviewContent(""); // Xóa trắng form
-      setNewReviewRating(5); // Reset số sao
-      fetchReviews(); // Load lại danh sách comment ngay lập tức
+      setNewReviewContent("");
+      setNewReviewRating(5);
+      // XÓA GỌI LẠI fetchReviews() ở đây, vì WebSocket sẽ tự động nhận data về và render cho bạn!
     } catch (err) {
       // Backend sẽ trả về lỗi nếu chưa mua hàng hoặc đã review rồi
       addToast(

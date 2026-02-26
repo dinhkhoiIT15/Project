@@ -12,6 +12,8 @@ from app.routes.order_routes import order_bp
 
 from flask_jwt_extended import JWTManager
 from werkzeug.security import generate_password_hash
+from flask_socketio import join_room, leave_room
+from app.extensions import socketio
 
 def create_app():
     app = Flask(__name__)
@@ -23,6 +25,19 @@ def create_app():
     db.init_app(app)
 
     jwt = JWTManager(app)
+    socketio.init_app(app) # MỚI: Khởi tạo SocketIO kết nối với App
+    
+    # MỚI: Xử lý sự kiện người dùng VÀO trang chi tiết sản phẩm
+    @socketio.on('join')
+    def on_join(data):
+        room = data['room'] # VD: 'product_1'
+        join_room(room)
+
+    # MỚI: Xử lý sự kiện THOÁT phòng (Bạn bị thiếu đoạn này)
+    @socketio.on('leave')
+    def on_leave(data):
+        room = data['room']
+        leave_room(room)
     
     # Đăng ký các đường dẫn (Routes) vào ứng dụng
     app.register_blueprint(auth_bp) # MỚI THÊM: Đăng ký auth routes
@@ -55,4 +70,5 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=True, port=5000)
+    # MỚI: Chạy server bằng socketio thay vì app.run
+    socketio.run(app, debug=True, port=5000)

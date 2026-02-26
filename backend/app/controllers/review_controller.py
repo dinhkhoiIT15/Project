@@ -2,6 +2,7 @@ from flask import request, jsonify
 from app.models.models import db, Review, Product, Order, OrderDetail, User
 from flask_jwt_extended import get_jwt_identity
 from datetime import datetime
+from app.extensions import socketio
 
 def predict_fake_review(content):
     """Giả lập AI phát hiện Review rác/giả mạo"""
@@ -24,7 +25,6 @@ def add_review():
     if not product_id or not content:
         return jsonify({"message": "Product ID and content are required"}), 400
 
-    # 1. KIỂM TRA LOGIC MUA HÀNG: Phải có trong bảng OrderDetail của 1 đơn hàng 'completed'
     has_purchased = db.session.query(OrderDetail).join(Order).filter(
         Order.user_id == user_id,
         Order.order_status == 'completed',
@@ -36,12 +36,10 @@ def add_review():
             "message": "Verify purchase failed. You can only review products you have successfully purchased."
         }), 403
 
-    # 2. KIỂM TRA: User đã review sản phẩm này chưa? (Tránh spam nhiều review 1 sản phẩm)
     existing_review = Review.query.filter_by(user_id=user_id, product_id=product_id).first()
     if existing_review:
         return jsonify({"message": "You have already reviewed this product."}), 409
 
-    # 3. Tạo review mới
     new_review = Review(
         user_id=user_id,
         product_id=product_id,
@@ -53,6 +51,18 @@ def add_review():
     try:
         db.session.add(new_review)
         db.session.commit()
+        
+        user = User.query.get(user_id)
+        review_data = {
+            "review_id": new_review.review_id,
+            "username": user.username if user else "Unknown",
+            "content": new_review.content,
+            "rating": new_review.rating,
+            "date": datetime.utcnow().strftime('%b %d, %Y')
+        }
+        
+        socketio.emit('new_review', review_data, to=f'product_{product_id}')
+        
         return jsonify({"message": "Review added successfully", "status": "success"}), 201
     except Exception as e:
         db.session.rollback()
@@ -62,7 +72,7 @@ def get_product_reviews(product_id):
     """Lấy danh sách review của 1 sản phẩm cụ thể (Công khai)"""
     reviews = db.session.query(Review, User.username).join(User).filter(
         Review.product_id == product_id,
-        Review.is_fake == False # Chỉ hiện các review thật
+        Review.is_fake == False 
     ).order_by(Review.created_at.desc()).all()
     
     result = []
@@ -95,7 +105,6 @@ def get_user_reviews():
         })
     return jsonify({"reviews": result, "status": "success"}), 200
 
-# MỚI: Thêm lại hàm get_fake_reviews đã bị thiếu
 def get_fake_reviews():
     """Admin lấy danh sách các đánh giá bị AI đánh dấu là Fake"""
     reviews = db.session.query(Review, User).join(User, Review.user_id == User.user_id).filter(Review.is_fake == True).order_by(Review.created_at.desc()).all()

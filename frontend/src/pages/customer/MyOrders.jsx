@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/layout/Navbar";
+import { io } from "socket.io-client"; // MỚI IMPORT
 import api from "../../services/api";
 import { ClipboardList, Clock, Package, Star } from "lucide-react";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
@@ -33,6 +34,27 @@ const MyOrders = () => {
       setLoading(false);
     }
   };
+
+  // MỚI: Lắng nghe trạng thái cập nhật bằng WebSocket
+  useEffect(() => {
+    const socket = io("http://localhost:5000");
+
+    socket.on("order_status_changed", (data) => {
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order.order_id === data.order_id
+            ? {
+                ...order,
+                order_status: data.new_status,
+                payment_status: data.payment_status,
+              }
+            : order,
+        ),
+      );
+    });
+
+    return () => socket.disconnect();
+  }, []);
 
   const getStatusStyle = (status) => {
     switch (status) {

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
 import { Truck, Clock, User, DollarSign } from "lucide-react";
+import { io } from "socket.io-client"; // MỚI IMPORT
 
 const ManageOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -22,7 +23,33 @@ const ManageOrders = () => {
 
   useEffect(() => {
     fetchAllOrders();
-  }, []);
+
+    // MỚI: Khởi tạo WebSocket lắng nghe sự kiện đổi trạng thái
+    const socket = io("http://localhost:5000");
+
+    socket.on("order_status_changed", (data) => {
+      // Tìm đơn hàng có ID tương ứng và tự động cập nhật Status
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order.order_id === data.order_id
+            ? {
+                ...order,
+                order_status: data.new_status,
+                payment_status: data.payment_status,
+              }
+            : order,
+        ),
+      );
+    });
+
+    // MỚI: Lắng nghe sự kiện khách hàng vừa đặt đơn mới
+    socket.on("new_order_placed", () => {
+      addToast("🛎️ New order received! Updating list...", "info");
+      fetchAllOrders(); // Tự động load lại bảng để lấy đơn hàng mới nhất
+    });
+
+    return () => socket.disconnect();
+  }, []); // <-- Cập nhật xong đoạn này
 
   const handleStatusUpdate = async (id, status) => {
     try {
