@@ -1,4 +1,4 @@
-import React, { useEffect } from "react"; // MỚI: Import thêm useEffect
+import React, { useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -21,13 +21,15 @@ import ManageOrders from "./pages/admin/ManageOrders";
 import Profile from "./pages/customer/Profile";
 import ProductDetail from "./pages/customer/ProductDetail";
 import Footer from "./components/layout/Footer";
+import MyReviews from "./pages/customer/MyReviews";
+import ManageReviews from "./pages/admin/ManageReviews";
+import OrderDetail from "./pages/customer/OrderDetail"; // MỚI IMPORT
 
 const AppContent = () => {
   const location = useLocation();
   const isAdminPath = location.pathname.startsWith("/admin");
   const { loading } = useAuth();
 
-  // MỚI: Tự động cuộn lên đầu trang mỗi khi location.pathname thay đổi
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
@@ -70,10 +72,28 @@ const AppContent = () => {
             }
           />
           <Route
+            path="/order/:id"
+            element={
+              <PrivateRoute>
+                <OrderDetail />
+              </PrivateRoute>
+            }
+          />
+          <Route
             path="/profile"
             element={
               <PrivateRoute>
                 <Profile />
+              </PrivateRoute>
+            }
+          />
+
+          {/* MỚI: Route quản lý đánh giá của khách hàng */}
+          <Route
+            path="/my-reviews"
+            element={
+              <PrivateRoute>
+                <MyReviews />
               </PrivateRoute>
             }
           />
@@ -90,6 +110,8 @@ const AppContent = () => {
             <Route path="categories" element={<ManageCategories />} />
             <Route path="products" element={<ManageProducts />} />
             <Route path="orders" element={<ManageOrders />} />
+            {/* MỚI: Route quản lý đánh giá cho Admin */}
+            <Route path="reviews" element={<ManageReviews />} />
           </Route>
         </Routes>
       </div>

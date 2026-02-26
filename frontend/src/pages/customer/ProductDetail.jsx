@@ -30,31 +30,58 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
 
-  const mockReviews = [
-    {
-      id: 1,
-      author: "Janice",
-      date: "Nov 24, 2025",
-      rating: 5,
-      content:
-        "I started using this product when my son gave me a gift package. I love the quality and the packaging is unique!",
-    },
-    {
-      id: 2,
-      author: "David",
-      date: "Nov 7, 2025",
-      rating: 5,
-      content:
-        "My wife and I love this. We use it every morning. Highly recommended for everyone!",
-    },
-    {
-      id: 3,
-      author: "Anonymous",
-      date: "Nov 4, 2025",
-      rating: 4,
-      content: "Simple and smooth experience. Great value for the price. ☕️",
-    },
-  ];
+  const [reviews, setReviews] = useState([]);
+
+  // MỚI: State cho form viết đánh giá
+  const [newReviewContent, setNewReviewContent] = useState("");
+  const [newReviewRating, setNewReviewRating] = useState(5);
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  // MỚI: Tách hàm fetchReviews ra ngoài để có thể gọi lại sau khi đăng comment thành công
+  const fetchReviews = async () => {
+    try {
+      const res = await api.get(`/reviews/product/${id}`);
+      setReviews(res.data.reviews || []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchReviews();
+  }, [id]);
+
+  // MỚI: Hàm xử lý khi người dùng ấn Submit Review
+  const handleSubmitReview = async () => {
+    if (!localStorage.getItem("token") && !sessionStorage.getItem("token")) {
+      addToast("Please sign in to write a review", "info");
+      return;
+    }
+    if (!newReviewContent.trim()) {
+      addToast("Please write a comment", "error");
+      return;
+    }
+    setSubmittingReview(true);
+    try {
+      await api.post("/reviews", {
+        product_id: product.product_id,
+        content: newReviewContent,
+        rating: newReviewRating,
+      });
+      addToast("Review submitted successfully!", "success");
+      setNewReviewContent(""); // Xóa trắng form
+      setNewReviewRating(5); // Reset số sao
+      fetchReviews(); // Load lại danh sách comment ngay lập tức
+    } catch (err) {
+      // Backend sẽ trả về lỗi nếu chưa mua hàng hoặc đã review rồi
+      addToast(
+        err.response?.data?.message || "Failed to submit review",
+        "error",
+      );
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -125,44 +152,118 @@ const ProductDetail = () => {
             </div>
 
             <div className="flex flex-col gap-8">
+              {/* Header Tổng quan Review từ DB thật */}
               <div className="flex items-center gap-4 border-b border-[#d0d7de] pb-4">
                 <h2 className="text-2xl font-bold text-[#1f2328]">Reviews</h2>
                 <div className="flex items-center gap-2 bg-[#f6f8fa] px-3 py-1 rounded-full border border-[#d0d7de]">
                   <div className="flex text-[#0969da]">
                     {[...Array(5)].map((_, i) => (
-                      <Star key={i} size={16} fill="currentColor" />
+                      <Star
+                        key={i}
+                        size={16}
+                        fill={
+                          i < Math.round(product?.avg_rating || 0)
+                            ? "currentColor"
+                            : "none"
+                        }
+                        strokeWidth={
+                          i < Math.round(product?.avg_rating || 0) ? 0 : 2
+                        }
+                        className={
+                          i >= Math.round(product?.avg_rating || 0)
+                            ? "text-[#d0d7de]"
+                            : ""
+                        }
+                      />
                     ))}
                   </div>
-                  <span className="font-bold text-sm">4.9</span>
-                  <span className="text-[#6e7781] text-sm">(146 reviews)</span>
+                  <span className="font-bold text-sm">
+                    {product?.avg_rating || 0}
+                  </span>
+                  <span className="text-[#6e7781] text-sm">
+                    ({product?.review_count || 0} reviews)
+                  </span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {mockReviews.map((review) => (
-                  <div
-                    key={review.id}
-                    className="flex flex-col gap-2 p-4 border border-[#d0d7de] rounded-lg bg-white shadow-sm"
-                  >
-                    <span className="font-bold text-[#1f2328]">
-                      {review.author}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <div className="flex text-[#0969da]">
-                        {[...Array(review.rating)].map((_, i) => (
-                          <Star key={i} size={14} fill="currentColor" />
-                        ))}
-                      </div>
-                      <span className="text-xs text-[#6e7781]">
-                        {review.date}
-                      </span>
-                    </div>
-                    <p className="text-sm text-[#1f2328] leading-relaxed line-clamp-3 italic">
-                      "{review.content}"
-                    </p>
+              {/* MỚI: FORM VIẾT ĐÁNH GIÁ */}
+              <div className="bg-[#f6f8fa] p-5 rounded-lg border border-[#d0d7de] flex flex-col gap-4">
+                <h3 className="font-bold text-[#1f2328]">Write a Review</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-[#6e7781]">
+                    Rating:
+                  </span>
+                  <div className="flex cursor-pointer text-[#0969da]">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        size={20}
+                        onClick={() => setNewReviewRating(star)}
+                        fill={star <= newReviewRating ? "currentColor" : "none"}
+                        strokeWidth={star <= newReviewRating ? 0 : 2}
+                        className={`transition-colors hover:text-blue-700 ${star > newReviewRating ? "text-[#d0d7de]" : ""}`}
+                      />
+                    ))}
                   </div>
-                ))}
+                </div>
+                <textarea
+                  className="w-full p-3 border border-[#d0d7de] rounded-md text-sm outline-none focus:border-[#0969da] resize-none shadow-sm"
+                  rows="3"
+                  placeholder="Share your experience with this product..."
+                  value={newReviewContent}
+                  onChange={(e) => setNewReviewContent(e.target.value)}
+                ></textarea>
+                <div className="flex justify-end">
+                  <Button
+                    onClick={handleSubmitReview}
+                    isLoading={submittingReview}
+                    className="px-6 py-2 text-sm shadow-sm"
+                  >
+                    Submit Review
+                  </Button>
+                </div>
               </div>
+
+              {/* DANH SÁCH BÌNH LUẬN TỪ DB */}
+              {reviews.length === 0 ? (
+                <p className="text-[#6e7781] italic font-medium p-4 border border-dashed border-[#d0d7de] rounded-lg text-center bg-[#f6f8fa]">
+                  No reviews yet. Be the first to review this product!
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {reviews.map((review) => (
+                    <div
+                      key={review.review_id}
+                      className="flex flex-col gap-2 p-5 border border-[#d0d7de] rounded-lg bg-white shadow-sm hover:border-[#0969da] transition-colors"
+                    >
+                      <span className="font-bold text-[#1f2328]">
+                        {review.username} {/* Đã cập nhật cho khớp với DB */}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex text-[#0969da]">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              size={14}
+                              fill={i < review.rating ? "currentColor" : "none"}
+                              strokeWidth={i < review.rating ? 0 : 2}
+                              className={
+                                i >= review.rating ? "text-[#d0d7de]" : ""
+                              }
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs font-medium text-[#6e7781]">
+                          {review.date}
+                        </span>
+                      </div>
+                      <p className="text-[15px] text-[#1f2328] leading-relaxed line-clamp-3">
+                        "{review.content}"
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <Button variant="outline" className="w-full py-2.5">
                 Read more reviews

@@ -72,6 +72,11 @@ def get_product_by_id(product_id):
         return jsonify({"message": "Product not found"}), 404
         
     p, cat_name = data
+
+    # MỚI: Tính toán thống kê Review
+    reviews = Review.query.filter_by(product_id=product_id, is_fake=False).all()
+    avg_rating = sum(r.rating for r in reviews) / len(reviews) if reviews else 0
+
     return jsonify({
         "product": {
             "product_id": p.product_id,
@@ -81,7 +86,9 @@ def get_product_by_id(product_id):
             "stock_quantity": p.stock_quantity,
             "category_id": p.category_id,
             "category_name": cat_name or "Uncategorized",
-            "image_url": p.image_url
+            "image_url": p.image_url,
+            "avg_rating": round(avg_rating, 1),
+            "review_count": len(reviews)
         },
         "status": "success"
     }), 200

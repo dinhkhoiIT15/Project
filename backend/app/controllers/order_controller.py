@@ -95,7 +95,7 @@ def update_order_status(order_id):
     return jsonify({"message": "Status updated"}), 200
 
 def get_user_orders():
-    """Lấy đơn hàng của khách hàng (phân trang 5 đơn/trang)."""
+    """Lấy đơn hàng của khách hàng (phân trang 5 đơn/trang) kèm thông tin sản phẩm."""
     user_id = get_jwt_identity()
     page = int(request.args.get('page', 1))
     per_page = int(request.args.get('per_page', 5))
@@ -106,13 +106,27 @@ def get_user_orders():
     
     result = []
     for o in orders:
+        # CẬP NHẬT: Truy vấn danh sách sản phẩm cho mỗi đơn hàng để Frontend hiển thị nút Review
+        details = OrderDetail.query.filter_by(order_id=o.order_id).all()
+        items = []
+        for d in details:
+            product = Product.query.get(d.product_id)
+            items.append({
+                "product_id": d.product_id,
+                "product_name": product.name if product else "Unknown Product",
+                "image_url": product.image_url if product else "",
+                "quantity": d.quantity,
+                "price": d.price_at_purchase
+            })
+
         result.append({
             "order_id": o.order_id,
             "total_amount": o.total_amount,
             "order_status": o.order_status,
             "payment_status": o.payment_status,
             "order_date": o.order_date.strftime('%Y-%m-%d %H:%M:%S'),
-            "shipping_address": o.shipping_address
+            "shipping_address": o.shipping_address,
+            "items": items # Trả về danh sách sản phẩm chi tiết
         })
     return jsonify({"orders": result, "total_pages": math.ceil(total_count/per_page)}), 200
 
@@ -137,3 +151,41 @@ def get_all_orders():
             "shipping_address": o.shipping_address
         })
     return jsonify({"orders": result, "total_pages": math.ceil(total_count/per_page)}), 200
+
+# CODE MỚI: Thêm hàm get_order_by_id
+def get_order_by_id(order_id):
+    """Lấy chi tiết 1 đơn hàng theo ID (Dùng chung cho Customer và Admin)"""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    order = Order.query.get(order_id)
+    
+    if not order:
+        return jsonify({"message": "Order not found"}), 404
+        
+    # SỬA LỖI Ở ĐÂY: Ép cả 2 biến về String trước khi so sánh để tránh lỗi khác kiểu dữ liệu
+    if str(order.user_id) != str(user_id) and user.role != 'Admin':
+        return jsonify({"message": "Permission denied"}), 403
+        
+    details = OrderDetail.query.filter_by(order_id=order.order_id).all()
+    items = []
+    for d in details:
+        product = Product.query.get(d.product_id)
+        items.append({
+            "product_id": d.product_id,
+            "product_name": product.name if product else "Unknown Product",
+            "image_url": product.image_url if product else "",
+            "quantity": d.quantity,
+            "price": d.price_at_purchase
+        })
+
+    result = {
+        "order_id": order.order_id,
+        "total_amount": order.total_amount,
+        "order_status": order.order_status,
+        "payment_status": order.payment_status,
+        "payment_method": getattr(order, 'payment_method', 'COD'),
+        "order_date": order.order_date.strftime('%Y-%m-%d %H:%M:%S'),
+        "shipping_address": order.shipping_address,
+        "items": items
+    }
+    return jsonify({"order": result, "status": "success"}), 200

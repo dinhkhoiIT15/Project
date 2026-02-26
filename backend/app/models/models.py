@@ -35,7 +35,9 @@ class Review(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
     product_id = db.Column(db.Integer, db.ForeignKey('products.product_id'))
     content = db.Column(db.Text, nullable=False)
+    rating = db.Column(db.Integer, default=5) # MỚI: Đánh giá từ 1-5 sao
     is_fake = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow) # MỚI: Thời điểm đánh giá
 
 class Order(db.Model):
     __tablename__ = 'orders'
@@ -45,7 +47,6 @@ class Order(db.Model):
     order_status = db.Column(db.String(50), default='pending')
     payment_status = db.Column(db.String(50), default='pending')
     payment_method = db.Column(db.String(50), default='COD') 
-    # MỚI THÊM: Lưu mã giao dịch từ ví điện tử
     transaction_id = db.Column(db.String(100)) 
     order_date = db.Column(db.DateTime, default=datetime.utcnow)
     shipping_address = db.Column(db.Text)
@@ -58,17 +59,11 @@ class OrderDetail(db.Model):
     quantity = db.Column(db.Integer, nullable=False)
     price_at_purchase = db.Column(db.Float, nullable=False)
 
-class Payment(db.Model):
-    __tablename__ = 'payments'
-    payment_id = db.Column(db.Integer, primary_key=True)
-    payment_method = db.Column(db.String(100))
-
 class Cart(db.Model):
     __tablename__ = 'carts'
     cart_id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class CartItem(db.Model):
     __tablename__ = 'cart_items'
@@ -76,4 +71,3 @@ class CartItem(db.Model):
     cart_id = db.Column(db.Integer, db.ForeignKey('carts.cart_id'))
     product_id = db.Column(db.Integer, db.ForeignKey('products.product_id'))
     quantity = db.Column(db.Integer, default=1)
-    added_at = db.Column(db.DateTime, default=datetime.utcnow)
