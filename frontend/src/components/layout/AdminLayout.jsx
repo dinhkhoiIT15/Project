@@ -1,23 +1,40 @@
-import React from 'react';
-import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Tags, Package, MessageSquareWarning, LogOut, ShoppingBag, Truck } from 'lucide-react';
+import React from "react";
+import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Tags,
+  Package,
+  MessageSquareWarning,
+  LogOut,
+  ShoppingBag,
+  Truck,
+} from "lucide-react";
+import { useAuth } from "../../context/AuthContext"; // MỚI: Import useAuth
 
 const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth(); // MỚI: Lấy hàm logout từ context
 
   const handleLogout = () => {
-    localStorage.clear();
-    navigate('/');
-    window.location.reload();
+    // Gọi hàm logout chuẩn từ Context thay vì xóa thủ công
+    logout();
   };
 
   const navItems = [
-    { path: '/admin', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
-    { path: '/admin/categories', icon: <Tags size={18} />, label: 'Categories' },
-    { path: '/admin/products', icon: <Package size={18} />, label: 'Products' },
-    { path: '/admin/orders', icon: <Truck size={18} />, label: 'Orders' },
-    { path: '/admin/reviews', icon: <MessageSquareWarning size={18} />, label: 'AI Reviews' },
+    { path: "/admin", icon: <LayoutDashboard size={18} />, label: "Dashboard" },
+    {
+      path: "/admin/categories",
+      icon: <Tags size={18} />,
+      label: "Categories",
+    },
+    { path: "/admin/products", icon: <Package size={18} />, label: "Products" },
+    { path: "/admin/orders", icon: <Truck size={18} />, label: "Orders" },
+    {
+      path: "/admin/reviews",
+      icon: <MessageSquareWarning size={18} />,
+      label: "AI Reviews",
+    },
   ];
 
   return (
@@ -25,29 +42,41 @@ const AdminLayout = () => {
       {/* Sidebar bên trái chuẩn GitHub */}
       <aside className="w-64 bg-[#f6f8fa] border-r border-[#d0d7de] flex flex-col">
         <div className="p-6 border-b border-[#d0d7de] bg-white">
-          <Link to="/" className="flex items-center text-[#1f2328] font-black text-xl">
+          <Link
+            to="/"
+            className="flex items-center text-[#1f2328] font-black text-xl"
+          >
             <div className="bg-[#1f2328] p-1.5 rounded-md mr-3">
               <ShoppingBag className="w-5 h-5 text-white" />
             </div>
             ADMIN
           </Link>
         </div>
-        
+
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-          <h3 className="px-3 text-[10px] font-bold text-[#6e7781] uppercase mb-2 tracking-wider">Management</h3>
+          <h3 className="px-3 text-[10px] font-bold text-[#6e7781] uppercase mb-2 tracking-wider">
+            Management
+          </h3>
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path || (location.pathname.startsWith(item.path) && item.path !== '/admin');
+            const isActive =
+              location.pathname === item.path ||
+              (location.pathname.startsWith(item.path) &&
+                item.path !== "/admin");
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 className={`flex items-center px-3 py-2 rounded-md transition-all duration-200 text-sm font-medium border border-transparent ${
-                  isActive 
-                    ? 'bg-white border-[#d0d7de] text-[#1f2328] border-l-4 border-l-[#0969da] shadow-sm' 
-                    : 'text-[#1f2328] hover:bg-[#eff1f3]'
+                  isActive
+                    ? "bg-white border-[#d0d7de] text-[#1f2328] border-l-4 border-l-[#0969da] shadow-sm"
+                    : "text-[#1f2328] hover:bg-[#eff1f3]"
                 }`}
               >
-                <span className={`${isActive ? 'text-[#0969da]' : 'text-[#6e7781]'} mr-3`}>{item.icon}</span>
+                <span
+                  className={`${isActive ? "text-[#0969da]" : "text-[#6e7781]"} mr-3`}
+                >
+                  {item.icon}
+                </span>
                 {item.label}
               </Link>
             );

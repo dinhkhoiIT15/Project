@@ -22,14 +22,20 @@ def get_all_products():
         Category, Product.category_id == Category.category_id
     )
     
+    # Lọc theo từ khóa tìm kiếm
     if search:
         query = query.filter(Product.name.ilike(f'%{search}%'))
         
-    if category_id:
+    # SỬA LỖI TẠI ĐÂY: Thụt đầu dòng đúng cho khối lệnh bên trong 'if'
+    if category_id and str(category_id).strip() != '' and str(category_id).lower() != 'null':
         try:
-            query = query.filter(Product.category_id == int(category_id))
-        except ValueError:
-            pass 
+            cat_id_int = int(category_id)
+            # Chỉ thực hiện filter nếu ID là một số nguyên hợp lệ lớn hơn 0
+            if cat_id_int > 0:
+                query = query.filter(Product.category_id == cat_id_int)
+        except (ValueError, TypeError):
+            # Nếu ID không phải là số (chuỗi rác), bỏ qua filter để trả về toàn bộ sản phẩm
+            pass
             
     total_count = query.count()
     total_pages = math.ceil(total_count / per_page)
@@ -137,7 +143,6 @@ def delete_product(product_id):
     """
     Xóa sản phẩm và toàn bộ lịch sử liên quan (OrderDetail, Cart, Reviews).
     Cho phép Admin dọn dẹp Database ngay cả khi sản phẩm đã có lịch sử đơn hàng.
-   
     """
     product = Product.query.get(product_id)
     if not product:
@@ -145,19 +150,14 @@ def delete_product(product_id):
         
     try:
         # 1. Xóa các bản ghi ở các bảng tham chiếu trước để tránh lỗi Foreign Key Constraint
-        # Xóa chi tiết đơn hàng liên quan đến sản phẩm này
         OrderDetail.query.filter_by(product_id=product_id).delete()
-        
-        # Xóa các mục trong giỏ hàng của người dùng có chứa sản phẩm này
         CartItem.query.filter_by(product_id=product_id).delete()
-        
-        # Xóa các đánh giá liên quan đến sản phẩm này
         Review.query.filter_by(product_id=product_id).delete()
 
-        # 2. Xóa bản ghi sản phẩm chính khỏi bảng products
+        # 2. Xóa bản ghi sản phẩm chính
         db.session.delete(product)
         
-        # 3. Lưu các thay đổi vào Database
+        # 3. Lưu các thay đổi
         db.session.commit()
         
         return jsonify({

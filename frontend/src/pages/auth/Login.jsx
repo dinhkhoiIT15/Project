@@ -18,9 +18,7 @@ const Login = ({ onLoginSuccess, switchToRegister }) => {
       const response = await api.post("/login", formData);
       const { user, access_token } = response.data;
 
-      // Gọi hàm login từ Context (Hàm này sẽ tự quyết định lưu vào đâu)
       login(user, access_token);
-
       if (onLoginSuccess) onLoginSuccess(user.role);
     } catch (error) {
       setErrorMsg(error.response?.data?.message || "Login failed.");
@@ -30,19 +28,29 @@ const Login = ({ onLoginSuccess, switchToRegister }) => {
   };
 
   return (
-    <div className="flex flex-col h-full animate-fade-in p-2">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-black text-[#1f2328]">Welcome Back</h2>
-        <p className="text-[#6e7781] text-sm mt-1 font-medium">
+    <div className="flex w-full flex-col animate-fade-in pb-4 px-2">
+      {/* Header section: Icon và Text nằm ngang */}
+      <div className="flex flex-col items-center justify-center mb-6 mt-2">
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <div className="bg-[#0969da]/10 p-2.5 rounded-full flex items-center justify-center">
+            <LogIn size={24} className="text-[#0969da]" />
+          </div>
+          <h2 className="text-2xl font-black text-[#1f2328]">Welcome Back</h2>
+        </div>
+        <p className="text-[#6e7781] text-sm font-medium text-center px-4">
           Please sign in to continue
         </p>
       </div>
+
+      {/* Thông báo lỗi */}
       {errorMsg && (
-        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-xs font-bold border border-red-100 text-center">
+        <div className="mb-4 p-3 bg-[#fff8f7] text-[#cf222e] rounded-md text-xs font-bold border border-[#ffdce0] text-center">
           {errorMsg}
         </div>
       )}
-      <form onSubmit={handleSubmit} className="flex-1 space-y-4">
+
+      {/* Form nhập liệu */}
+      <form onSubmit={handleSubmit} className="flex flex-col w-full">
         <Input
           label="Username"
           name="username"
@@ -62,10 +70,32 @@ const Login = ({ onLoginSuccess, switchToRegister }) => {
           }
           required
         />
-        <Button type="submit" fullWidth isLoading={loading} className="py-2.5">
-          Sign In
-        </Button>
+
+        <div className="pt-2">
+          <Button
+            type="submit"
+            fullWidth
+            isLoading={loading}
+            className="py-3 text-[15px]"
+          >
+            Sign In
+          </Button>
+        </div>
       </form>
+
+      {/* Footer link */}
+      <div className="flex flex-wrap items-center justify-center gap-1.5 mt-6 text-sm">
+        <span className="text-[#1f2328] font-medium">
+          Don't have an account?
+        </span>
+        <button
+          onClick={switchToRegister}
+          type="button"
+          className="text-[#0969da] hover:underline font-bold transition-colors"
+        >
+          Create account
+        </button>
+      </div>
     </div>
   );
 };

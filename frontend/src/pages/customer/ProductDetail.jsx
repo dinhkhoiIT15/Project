@@ -4,6 +4,7 @@ import Navbar from "../../components/layout/Navbar";
 import Button from "../../components/common/Button";
 import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
+import { useCart } from "../../context/CartContext"; // MỚI IMPORT
 import {
   Loader2,
   Star,
@@ -22,13 +23,13 @@ const ProductDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { addToast } = useToast();
+  const { fetchCartCount } = useCart(); // MỚI
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
 
-  // Mock Reviews - Sẽ được thay thế bằng API thực tế sau này
   const mockReviews = [
     {
       id: 1,
@@ -83,6 +84,7 @@ const ProductDetail = () => {
     try {
       await api.post("/cart", { product_id: product.product_id, quantity });
       addToast("Added to cart successfully!", "success");
+      fetchCartCount(); // MỚI: Gọi lệnh cập nhật chấm đỏ
     } catch (err) {
       addToast("Error adding to cart", "error");
     } finally {
@@ -111,11 +113,9 @@ const ProductDetail = () => {
           <Breadcrumbs.Divider />
           <Breadcrumbs.Item active>{product?.name}</Breadcrumbs.Item>
         </Breadcrumbs>
-        {/* Main Product Section */}
+
         <div className="flex flex-col lg:flex-row gap-12 items-start">
-          {/* LEFT COLUMN: Image and Reviews */}
           <div className="flex-1 flex flex-col gap-12 w-full">
-            {/* Image Showcase */}
             <div className="w-full bg-[#f6f8fa] border border-[#d0d7de] rounded-xl overflow-hidden p-8 flex items-center justify-center h-[500px]">
               <img
                 className="max-h-full max-w-full object-contain mix-blend-multiply hover:scale-105 transition-transform duration-500"
@@ -124,7 +124,6 @@ const ProductDetail = () => {
               />
             </div>
 
-            {/* Reviews Section */}
             <div className="flex flex-col gap-8">
               <div className="flex items-center gap-4 border-b border-[#d0d7de] pb-4">
                 <h2 className="text-2xl font-bold text-[#1f2328]">Reviews</h2>
@@ -171,9 +170,7 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Product Info Sidebar (Sticky) */}
           <div className="w-full lg:w-96 flex flex-col gap-8 lg:sticky lg:top-24">
-            {/* Header & Price */}
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-[#1f2328] rounded-md flex items-center justify-center text-white font-bold text-xs">
@@ -205,7 +202,6 @@ const ProductDetail = () => {
                 </span>
               </div>
 
-              {/* Delivery Info */}
               <div className="flex flex-col gap-1 py-4 border-y border-[#d0d7de]">
                 <div className="flex items-center gap-2 text-sm text-[#1f2328]">
                   <Truck size={18} className="text-[#6e7781]" />
@@ -220,7 +216,6 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            {/* Selection & Actions */}
             <div className="flex flex-col gap-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -240,7 +235,7 @@ const ProductDetail = () => {
                         setQuantity((q) =>
                           Math.min(product?.stock_quantity, q + 1),
                         )
-                      } // GIỚI HẠN Ở ĐÂY
+                      }
                       className={`p-2 transition-colors ${quantity >= product?.stock_quantity ? "bg-gray-100 text-gray-300 cursor-not-allowed" : "hover:bg-[#f6f8fa] text-[#6e7781]"}`}
                       disabled={quantity >= product?.stock_quantity}
                     >
@@ -288,7 +283,6 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            {/* Description Section */}
             <div className="flex flex-col gap-3">
               <h3 className="text-lg font-bold text-[#1f2328] border-b border-[#d0d7de] pb-2">
                 Description
@@ -296,7 +290,6 @@ const ProductDetail = () => {
               <p className="text-sm text-[#6e7781] leading-relaxed">
                 {product?.description}
               </p>
-
               <div className="flex flex-col gap-2 mt-4">
                 <Button
                   variant="outline"
@@ -313,7 +306,6 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* Similar Products Section */}
         <div className="mt-20 pt-10 border-t border-[#d0d7de]">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-black text-[#1f2328]">
@@ -326,9 +318,7 @@ const ProductDetail = () => {
               View all <ChevronRight size={16} />
             </Link>
           </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Đây là khu vực để Map các sản phẩm tương tự từ API trong tương lai */}
             <p className="col-span-full text-center text-[#6e7781] italic py-10 bg-[#f6f8fa] border border-dashed border-[#d0d7de] rounded-xl">
               Stay tuned! More similar products are coming soon.
             </p>

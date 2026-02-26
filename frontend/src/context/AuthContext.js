@@ -10,7 +10,6 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      // Ưu tiên kiểm tra sessionStorage (Admin) trước, sau đó mới đến localStorage (Customer)
       const token =
         sessionStorage.getItem("token") || localStorage.getItem("token");
 
@@ -19,16 +18,20 @@ export const AuthProvider = ({ children }) => {
           const res = await api.get("/user/profile");
           const userData = res.data.user;
 
-          // Kiểm tra chéo: Nếu trong localStorage có token Admin (lỗi cũ), ta xóa ngay
+          // Chuyển token Admin từ localStorage sang sessionStorage nếu bị lưu sai
           if (userData.role === "Admin" && localStorage.getItem("token")) {
             localStorage.clear();
-            sessionStorage.setItem("token", token); // Chuyển sang sessionStorage đúng chỗ
+            sessionStorage.setItem("token", token);
           }
 
           setUser(userData);
           setIsAuthenticated(true);
         } catch (err) {
-          logout();
+          // Xóa tĩnh lặng nếu token lỗi
+          sessionStorage.clear();
+          localStorage.clear();
+          setUser(null);
+          setIsAuthenticated(false);
         }
       }
       setLoading(false);
@@ -38,11 +41,9 @@ export const AuthProvider = ({ children }) => {
 
   const login = (userData, token) => {
     if (userData.role === "Admin") {
-      // Admin: Lưu vào sessionStorage -> Tắt trình duyệt là mất
       sessionStorage.setItem("token", token);
       sessionStorage.setItem("role", userData.role);
     } else {
-      // Customer: Lưu vào localStorage -> Khởi động lại vẫn còn
       localStorage.setItem("token", token);
       localStorage.setItem("role", userData.role);
     }
@@ -51,11 +52,26 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.clear();
+    // Lưu lại token tạm thời để gọi API
+    const token =
+      sessionStorage.getItem("token") || localStorage.getItem("token");
+
+    // 1. XÓA BỘ NHỚ NGAY LẬP TỨC
     sessionStorage.clear();
+    localStorage.clear();
+
+    // 2. Hủy state React
     setUser(null);
     setIsAuthenticated(false);
-    window.location.href = "/";
+
+    // 3. Gọi API logout ngầm
+    if (token) {
+      api.post("/logout").catch(() => {});
+    }
+
+    // 4. Ép trình duyệt xóa cache state và thay thế URL hiện tại bằng trang chủ
+    // Dùng replace thay vì href để user không thể nhấn nút Back quay lại trang Admin
+    window.location.replace("/");
   };
 
   return (

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react"; // MỚI: Import thêm useEffect
 import {
   BrowserRouter as Router,
   Routes,
@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { ToastProvider } from "./context/ToastContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { CartProvider } from "./context/CartContext";
 import Home from "./pages/customer/Home";
 import AdminLayout from "./components/layout/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
@@ -25,6 +26,11 @@ const AppContent = () => {
   const location = useLocation();
   const isAdminPath = location.pathname.startsWith("/admin");
   const { loading } = useAuth();
+
+  // MỚI: Tự động cuộn lên đầu trang mỗi khi location.pathname thay đổi
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   if (loading)
     return (
@@ -102,7 +108,7 @@ const PrivateRoute = ({ children }) => {
 };
 
 const AdminRoute = ({ children }) => {
-  const { isAuthenticated, user } = useAuth(); // KHÔNG dùng localStorage ở đây
+  const { isAuthenticated, user } = useAuth();
   if (!isAuthenticated)
     return <Navigate to="/" state={{ openLogin: true }} replace />;
   if (user?.role !== "Admin") return <Navigate to="/" replace />;
@@ -113,9 +119,11 @@ function App() {
   return (
     <ToastProvider>
       <AuthProvider>
-        <Router>
-          <AppContent />
-        </Router>
+        <CartProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </CartProvider>
       </AuthProvider>
     </ToastProvider>
   );

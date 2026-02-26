@@ -70,3 +70,10 @@ def login():
             "role": user.role # Gửi role về để Frontend quyết định lưu vào đâu
         }
     }), 200
+
+def logout():
+    """API Logout (Dùng để mở rộng Blocklist Token nếu cần bảo mật cao hơn)"""
+    return jsonify({
+        "message": "Successfully logged out", 
+        "status": "success"
+    }), 200
