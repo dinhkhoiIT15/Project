@@ -1,3 +1,7 @@
+# MỚI: BẮT BUỘC PHẢI CÓ 2 DÒNG NÀY Ở TRÊN CÙNG ĐỂ SỬA LỖI EVENTLET TRÊN WINDOWS
+import eventlet
+eventlet.monkey_patch()
+
 from flask import Flask
 from flask_cors import CORS # MỚI THÊM 1: Nạp thư viện CORS
 from config import Config

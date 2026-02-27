@@ -6,6 +6,7 @@ import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
 import { useCart } from "../../context/CartContext"; // MỚI IMPORT
 import { io } from "socket.io-client"; // MỚI IMPORT
+import { useAuth } from "../../context/AuthContext"; // MỚI IMPORT
 import {
   Loader2,
   Star,
@@ -16,8 +17,13 @@ import {
   Store,
   ShieldCheck,
   ChevronRight,
+  Edit2,
+  Trash2,
+  X,
+  Check, // MỚI THÊM ICON
 } from "lucide-react";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
+import ConfirmDialog from "../../components/common/ConfirmDialog"; // MỚI IMPORT
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -25,6 +31,7 @@ const ProductDetail = () => {
   const location = useLocation();
   const { addToast } = useToast();
   const { fetchCartCount } = useCart(); // MỚI
+  const { user } = useAuth(); // MỚI LẤY THÔNG TIN USER
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -37,6 +44,15 @@ const ProductDetail = () => {
   const [newReviewContent, setNewReviewContent] = useState("");
   const [newReviewRating, setNewReviewRating] = useState(5);
   const [submittingReview, setSubmittingReview] = useState(false);
+  // MỚI: State cho việc Edit In-line
+  const [editingReviewId, setEditingReviewId] = useState(null);
+  const [editContent, setEditContent] = useState("");
+  const [editRating, setEditRating] = useState(5);
+
+  // MỚI: State cho hộp thoại xác nhận xóa
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [reviewToDelete, setReviewToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // MỚI: Tách hàm fetchReviews ra ngoài để có thể gọi lại sau khi đăng comment thành công
   const fetchReviews = async () => {
@@ -78,6 +94,32 @@ const ProductDetail = () => {
       });
     });
 
+    // Lắng nghe người khác SỬA comment
+    socket.on("review_updated", (data) => {
+      setReviews((prev) =>
+        prev.map((r) =>
+          r.review_id === data.review_id
+            ? { ...r, content: data.content, rating: data.rating }
+            : r,
+        ),
+      );
+      // MỚI: Tự động tải lại thông tin Sản phẩm để cập nhật Số sao trung bình (avg_rating)
+      api.get(`/products/${id}`).then((res) => setProduct(res.data.product));
+    });
+
+    // Lắng nghe người khác XÓA comment
+    socket.on("review_deleted", (data) => {
+      setReviews((prev) => prev.filter((r) => r.review_id !== data.review_id));
+      // MỚI: Tự động tải lại thông tin Sản phẩm để giảm Số đếm đánh giá (review_count)
+      api.get(`/products/${id}`).then((res) => setProduct(res.data.product));
+    });
+
+    // MỚI: Lắng nghe Admin BỎ ẨN comment
+    socket.on("review_unhidden", () => {
+      fetchReviews(); // Tải lại danh sách
+      api.get(`/products/${id}`).then((res) => setProduct(res.data.product));
+    });
+
     // Rời phòng khi chuyển sang trang khác
     return () => {
       socket.emit("leave", { room: `product_${id}` });
@@ -114,6 +156,40 @@ const ProductDetail = () => {
       );
     } finally {
       setSubmittingReview(false);
+    }
+  };
+
+  const handleUpdateReview = async (reviewId) => {
+    try {
+      await api.put(`/reviews/${reviewId}`, {
+        content: editContent,
+        rating: editRating,
+      });
+      addToast("Review updated!", "success");
+      setEditingReviewId(null);
+      // Không gọi fetchReviews vì Socket đã tự cập nhật!
+    } catch (err) {
+      addToast("Failed to update", "error");
+    }
+  };
+
+  const handleDeleteClick = (reviewId) => {
+    setReviewToDelete(reviewId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteReview = async () => {
+    if (!reviewToDelete) return;
+    setIsDeleting(true);
+    try {
+      await api.delete(`/reviews/user/${reviewToDelete}`);
+      addToast("Review deleted!", "success");
+    } catch (err) {
+      addToast("Failed to delete", "error");
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+      setReviewToDelete(null);
     }
   };
 
@@ -265,37 +341,117 @@ const ProductDetail = () => {
                 </p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {reviews.map((review) => (
-                    <div
-                      key={review.review_id}
-                      className="flex flex-col gap-2 p-5 border border-[#d0d7de] rounded-lg bg-white shadow-sm hover:border-[#0969da] transition-colors"
-                    >
-                      <span className="font-bold text-[#1f2328]">
-                        {review.username} {/* Đã cập nhật cho khớp với DB */}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <div className="flex text-[#0969da]">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              size={14}
-                              fill={i < review.rating ? "currentColor" : "none"}
-                              strokeWidth={i < review.rating ? 0 : 2}
-                              className={
-                                i >= review.rating ? "text-[#d0d7de]" : ""
-                              }
-                            />
-                          ))}
-                        </div>
-                        <span className="text-xs font-medium text-[#6e7781]">
-                          {review.date}
-                        </span>
+                  {reviews.map((review) => {
+                    const isOwner = user?.username === review.username; // Xác định chủ sở hữu
+
+                    return (
+                      <div
+                        key={review.review_id}
+                        className="flex flex-col gap-2 p-5 border border-[#d0d7de] rounded-lg bg-white shadow-sm hover:border-[#0969da] transition-colors relative group"
+                      >
+                        {/* FORM CHỈNH SỬA */}
+                        {editingReviewId === review.review_id ? (
+                          <div className="flex flex-col gap-3">
+                            <div className="flex text-[#0969da] cursor-pointer">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  size={16}
+                                  onClick={() => setEditRating(star)}
+                                  fill={
+                                    star <= editRating ? "currentColor" : "none"
+                                  }
+                                  strokeWidth={star <= editRating ? 0 : 2}
+                                  className={
+                                    star > editRating ? "text-[#d0d7de]" : ""
+                                  }
+                                />
+                              ))}
+                            </div>
+                            <textarea
+                              className="w-full p-2 border border-[#d0d7de] rounded text-sm outline-none focus:border-[#0969da]"
+                              rows="3"
+                              value={editContent}
+                              onChange={(e) => setEditContent(e.target.value)}
+                            ></textarea>
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                onClick={() => setEditingReviewId(null)}
+                                className="text-xs font-bold text-[#6e7781] hover:underline"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleUpdateReview(review.review_id)
+                                }
+                                className="text-xs font-bold text-[#0969da] hover:underline"
+                              >
+                                Save
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            {/* NÚT EDIT/DELETE ẨN HIỆN */}
+                            {isOwner && (
+                              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 bg-white pl-2">
+                                <button
+                                  onClick={() => {
+                                    setEditingReviewId(review.review_id);
+                                    setEditContent(review.content);
+                                    setEditRating(review.rating);
+                                  }}
+                                  className="text-[#6e7781] hover:text-[#0969da]"
+                                  title="Edit"
+                                >
+                                  <Edit2 size={14} />
+                                </button>
+                                <button
+                                  onClick={
+                                    () => handleDeleteClick(review.review_id) // SỬA THÀNH handleDeleteClick
+                                  }
+                                  className="text-[#6e7781] hover:text-[#cf222e]"
+                                  title="Delete"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            )}
+
+                            <span className="font-bold text-[#1f2328]">
+                              {review.username}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <div className="flex text-[#0969da]">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    size={14}
+                                    fill={
+                                      i < review.rating
+                                        ? "currentColor"
+                                        : "none"
+                                    }
+                                    strokeWidth={i < review.rating ? 0 : 2}
+                                    className={
+                                      i >= review.rating ? "text-[#d0d7de]" : ""
+                                    }
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-xs font-medium text-[#6e7781]">
+                                {review.date}
+                              </span>
+                            </div>
+                            <p className="text-[15px] text-[#1f2328] leading-relaxed line-clamp-3">
+                              "{review.content}"
+                            </p>
+                          </>
+                        )}
                       </div>
-                      <p className="text-[15px] text-[#1f2328] leading-relaxed line-clamp-3">
-                        "{review.content}"
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -460,6 +616,17 @@ const ProductDetail = () => {
           </div>
         </div>
       </main>
+      {/* MỚI: Hộp thoại xác nhận xóa */}
+      <ConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={confirmDeleteReview}
+        title="Delete Review"
+        message="Are you sure you want to delete your review? This action cannot be undone."
+        confirmText="Delete"
+        type="danger"
+        isLoading={isDeleting}
+      />
     </div>
   );
 };

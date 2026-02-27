@@ -6,9 +6,14 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  // Lấy token từ sessionStorage (Admin) hoặc localStorage (Customer)
-  const token =
-    sessionStorage.getItem("token") || localStorage.getItem("token");
+  // Ưu tiên kiểm tra token trong sessionStorage trước (nơi lưu token Admin khi đăng nhập)
+  let token = sessionStorage.getItem("token");
+
+  // Nếu không có trong session (không phải admin), mới tìm ở localStorage
+  if (!token) {
+    token = localStorage.getItem("token");
+  }
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

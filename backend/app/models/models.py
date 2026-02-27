@@ -35,9 +35,10 @@ class Review(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
     product_id = db.Column(db.Integer, db.ForeignKey('products.product_id'))
     content = db.Column(db.Text, nullable=False)
-    rating = db.Column(db.Integer, default=5) # MỚI: Đánh giá từ 1-5 sao
+    rating = db.Column(db.Integer, default=5)
     is_fake = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow) # MỚI: Thời điểm đánh giá
+    is_hidden = db.Column(db.Boolean, default=False) # MỚI: Trạng thái bị Admin ẩn
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Order(db.Model):
     __tablename__ = 'orders'

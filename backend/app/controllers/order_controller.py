@@ -251,3 +251,10 @@ def mark_notification_read(notif_id):
         notif.is_read = True
         db.session.commit()
     return jsonify({"status": "success"}), 200
+
+def clear_all_notifications():
+    """Xóa toàn bộ thông báo của user"""
+    user_id = get_jwt_identity()
+    Notification.query.filter_by(user_id=user_id).delete()
+    db.session.commit()
+    return jsonify({"status": "success"}), 200

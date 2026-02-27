@@ -105,6 +105,13 @@ const Navbar = () => {
       document.removeEventListener("mousedown", handleClickOutsideNotif);
   }, []);
 
+  const handleClearAllNotifs = async () => {
+    try {
+      await api.delete("/orders/notifications/clear");
+      setNotifications([]);
+    } catch (err) {}
+  };
+
   const handleNotifClick = async (notif) => {
     if (!notif.is_read) {
       await api.put(`/orders/notifications/${notif.id}/read`);
@@ -113,7 +120,10 @@ const Navbar = () => {
       );
     }
     setShowNotif(false);
-    navigate(`/order/${notif.order_id}`); // Điều hướng thẳng tới trang chi tiết đơn
+    if (notif.order_id !== 0) {
+      // CHẶN CHUYỂN TRANG NẾU LÀ THÔNG BÁO XÓA REVIEW
+      navigate(`/order/${notif.order_id}`);
+    }
   };
 
   useEffect(() => {
@@ -304,6 +314,14 @@ const Navbar = () => {
                       <h3 className="text-lg font-black text-[#1f2328]">
                         Notifications
                       </h3>
+                      {notifications.length > 0 && (
+                        <button
+                          onClick={handleClearAllNotifs}
+                          className="text-xs font-bold text-[#0969da] hover:underline"
+                        >
+                          Clear All
+                        </button>
+                      )}
                     </div>
 
                     <ul className="max-h-[350px] overflow-y-auto bg-white">
