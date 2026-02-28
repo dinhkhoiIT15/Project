@@ -145,21 +145,30 @@ const Dashboard = () => {
         {stats.map((stat, index) => (
           <div
             key={index}
-            className="bg-white p-5 rounded-lg border border-[#d0d7de] flex items-center shadow-sm hover:border-[#0969da] transition-colors"
+            className="bg-white p-6 rounded-xl border border-[#d0d7de] shadow-sm hover:border-[#0969da] hover:shadow-md transition-all flex flex-col justify-start"
           >
-            <div className={`p-3 rounded-md ${stat.bg} ${stat.color} mr-4`}>
-              {stat.icon}
+            {/* Dòng 1: Cố định vị trí Icon và Thông số ngang hàng nhau */}
+            <div className="flex items-center w-full">
+              {/* Khối Icon bên trái: Ép kích thước cứng để tránh móp méo */}
+              <div
+                className={`w-[52px] h-[52px] flex items-center justify-center rounded-xl ${stat.bg} ${stat.color} mr-5 flex-shrink-0`}
+              >
+                {stat.icon}
+              </div>
+
+              {/* Khối Stack Text dọc bên phải */}
+              <div className="flex flex-col items-start w-full">
+                <span className="text-[12px] font-bold text-[#6e7781] uppercase tracking-wider mb-1">
+                  {stat.title}
+                </span>
+                <span className="text-2xl font-black text-[#1f2328] leading-none">
+                  {stat.value}
+                </span>
+              </div>
             </div>
-            <div>
-              <p className="text-[11px] font-bold text-[#6e7781] uppercase tracking-wider">
-                {stat.title}
-              </p>
-              <h3 className="text-xl font-black text-[#1f2328]">
-                {stat.value}
-              </h3>
-              {/* MỚI: Hiển thị thêm chi tiết (nếu có) */}
-              {stat.extra && stat.extra}
-            </div>
+
+            {/* Dòng 2: Huy hiệu (Được đẩy xuống dưới một tí và thụt lề bằng đúng Icon) */}
+            {stat.extra && <div className="ml-[72px] mt-2">{stat.extra}</div>}
           </div>
         ))}
       </div>
