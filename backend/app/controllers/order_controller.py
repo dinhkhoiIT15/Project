@@ -119,6 +119,35 @@ def update_order_status(order_id):
     
     return jsonify({"message": "Status updated"}), 200
 
+def cancel_order_by_user(order_id):
+    user_id = get_jwt_identity()
+    order = Order.query.get(order_id)
+    
+    if not order:
+        return jsonify({"message": "Order not found"}), 404
+        
+    if str(order.user_id) != str(user_id):
+        return jsonify({"message": "Permission denied"}), 403
+        
+    # Chỉ cho phép hủy nếu đơn hàng vẫn đang ở trạng thái pending (Chưa bị admin xác nhận)
+    if order.order_status != 'pending':
+        return jsonify({"message": "Order has already been confirmed and cannot be cancelled"}), 400
+        
+    # Gọi hàm nội bộ để trả lại hàng về Giỏ và hoàn lại số lượng Kho
+    _restore_items_to_cart(order)
+    
+    order.order_status = 'cancelled'
+    db.session.commit()
+    
+    # Phát tín hiệu Socket báo cho Admin biết đơn hàng đã bị khách tự hủy
+    socketio.emit('order_status_changed', {
+        'order_id': order.order_id,
+        'new_status': 'cancelled',
+        'payment_status': order.payment_status
+    })
+    
+    return jsonify({"message": "Order cancelled successfully"}), 200
+
 def get_user_orders():
     user_id = get_jwt_identity()
     page = int(request.args.get('page', 1))

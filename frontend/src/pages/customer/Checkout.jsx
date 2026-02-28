@@ -6,8 +6,10 @@ import Input from "../../components/common/Input";
 import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
 import { useCart } from "../../context/CartContext";
-import { ShieldCheck, Truck } from "lucide-react";
+// MỚI: Import thêm các icon trạng thái và io socket
+import { ShieldCheck, Truck, Clock, CheckCircle2, XCircle } from "lucide-react";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
+import { io } from "socket.io-client";
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -15,6 +17,11 @@ const Checkout = () => {
   const { fetchCartCount } = useCart();
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // MỚI: Các State quản lý luồng chờ xác nhận đơn hàng
+  const [placedOrderId, setPlacedOrderId] = useState(null);
+  const [orderStatus, setOrderStatus] = useState("pending");
+  const [countdown, setCountdown] = useState(60); // Đếm ngược 60 giây
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -28,6 +35,41 @@ const Checkout = () => {
     fetchProfile();
   }, []);
 
+  // MỚI: Lắng nghe Socket để biết Admin đã xác nhận chưa + Quản lý đếm ngược
+  useEffect(() => {
+    if (!placedOrderId) return;
+
+    const socket = io("http://localhost:5000");
+
+    // Nếu admin update trạng thái, tắt ngay nút Hủy và báo thành công
+    socket.on("order_status_changed", (data) => {
+      if (data.order_id === placedOrderId) {
+        setOrderStatus(data.new_status);
+        if (data.new_status !== "pending" && data.new_status !== "cancelled") {
+          addToast(
+            `Shop has updated your order to: ${data.new_status}`,
+            "info",
+          );
+        }
+      }
+    });
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0; // Hết giờ
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      socket.disconnect();
+      clearInterval(timer);
+    };
+  }, [placedOrderId]);
+
   const handleCheckout = async (e) => {
     e.preventDefault();
     if (!address) {
@@ -37,14 +79,18 @@ const Checkout = () => {
 
     setLoading(true);
     try {
-      await api.post("/orders/checkout", {
+      const res = await api.post("/orders/checkout", {
         shipping_address: address,
         payment_method: "COD",
       });
 
-      addToast("Order placed successfully! Thank you.", "success");
+      addToast("Order placed! Waiting for shop confirmation.", "success");
       fetchCartCount();
-      navigate("/my-orders");
+
+      // MỚI: Thay vì nhảy trang, ta lưu lại ID đơn hàng để hiện màn hình chờ
+      setPlacedOrderId(res.data.order_id);
+      setOrderStatus("pending");
+      setCountdown(60);
     } catch (err) {
       const errorMsg =
         err.response?.data?.message || "Order failed. Please try again.";
@@ -54,8 +100,110 @@ const Checkout = () => {
     }
   };
 
+  // MỚI: Hàm xử lý khi User bấm Hủy đơn hàng
+  const handleUserCancel = async () => {
+    try {
+      await api.put(`/orders/${placedOrderId}/cancel`);
+      addToast("Order cancelled. Items returned to your cart.", "info");
+      setOrderStatus("cancelled");
+      fetchCartCount(); // Load lại số lượng giỏ hàng trên Navbar
+
+      // Tự động quay về giỏ hàng sau 2 giây
+      setTimeout(() => navigate("/cart"), 2000);
+    } catch (err) {
+      addToast(
+        "Cannot cancel order. Shop might have already confirmed it.",
+        "error",
+      );
+    }
+  };
+
+  // MỚI: Giao diện Màn hình chờ xác nhận (Hiển thị khi đã đặt hàng thành công)
+  if (placedOrderId) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc]">
+        <Navbar />
+        <main className="max-w-xl mx-auto px-4 py-16 text-center animate-fade-in">
+          {orderStatus === "pending" ? (
+            <div className="bg-white p-10 rounded-xl border border-[#d0d7de] shadow-sm flex flex-col items-center">
+              <div className="w-20 h-20 bg-[#ddf4ff] rounded-full flex items-center justify-center mb-6 animate-pulse">
+                <Clock size={40} className="text-[#0969da]" />
+              </div>
+              <h2 className="text-2xl font-black text-[#1f2328] mb-2">
+                Waiting for Confirmation
+              </h2>
+              <p className="text-[#6e7781] mb-8 font-medium">
+                Your order{" "}
+                <span className="font-bold text-[#1f2328]">
+                  #{placedOrderId}
+                </span>{" "}
+                is waiting for shop approval.
+              </p>
+
+              <div className="bg-[#f6f8fa] w-full p-4 rounded-lg mb-8 border border-[#d0d7de]">
+                <p className="text-sm font-bold text-[#1f2328] mb-1">
+                  Time remaining to cancel:
+                </p>
+                <p className="text-4xl font-black text-[#cf222e]">
+                  {countdown}s
+                </p>
+              </div>
+
+              <div className="flex gap-4 w-full">
+                <Button
+                  variant="outline"
+                  fullWidth
+                  onClick={handleUserCancel}
+                  disabled={countdown === 0} // Hết giờ sẽ vô hiệu hóa nút
+                  className={
+                    countdown > 0
+                      ? "border-[#cf222e] text-[#cf222e] hover:bg-[#ffebe9]"
+                      : ""
+                  }
+                >
+                  {countdown > 0 ? "Cancel Order" : "Time Window Closed"}
+                </Button>
+                <Button fullWidth onClick={() => navigate("/my-orders")}>
+                  View Order
+                </Button>
+              </div>
+            </div>
+          ) : orderStatus === "cancelled" ? (
+            <div className="bg-white p-10 rounded-xl border border-[#cf222e]/30 shadow-sm flex flex-col items-center">
+              <XCircle size={60} className="text-[#cf222e] mb-4" />
+              <h2 className="text-2xl font-black text-[#cf222e] mb-2">
+                Order Cancelled
+              </h2>
+              <p className="text-[#6e7781] mb-6 font-medium">
+                Your items have been safely returned to your cart.
+              </p>
+              <Button onClick={() => navigate("/cart")}>Back to Cart</Button>
+            </div>
+          ) : (
+            <div className="bg-white p-10 rounded-xl border border-[#1a7f37]/30 shadow-sm flex flex-col items-center">
+              <CheckCircle2
+                size={60}
+                className="text-[#1a7f37] mb-4 animate-bounce"
+              />
+              <h2 className="text-2xl font-black text-[#1a7f37] mb-2">
+                Order Confirmed!
+              </h2>
+              <p className="text-[#6e7781] mb-6 font-medium">
+                The shop is now processing your order. Thank you!
+              </p>
+              <Button onClick={() => navigate("/my-orders")}>
+                Track Order
+              </Button>
+            </div>
+          )}
+        </main>
+      </div>
+    );
+  }
+
+  // Giao diện Checkout bình thường (Chưa đặt hàng)
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white font-sans">
       <Navbar />
       <main className="max-w-3xl mx-auto px-4 py-8">
         <Breadcrumbs>

@@ -4,7 +4,8 @@ from app.controllers.order_controller import (
     get_user_orders, 
     get_all_orders, 
     update_order_status,
-    get_order_by_id # MỚI: Import hàm vừa viết
+    get_order_by_id,
+    cancel_order_by_user # MỚI: Import hàm khách hàng tự hủy đơn
 )
 from flask_jwt_extended import jwt_required
 from app.utils.decorators import admin_required
@@ -13,6 +14,7 @@ order_bp = Blueprint('order_bp', __name__)
 
 order_bp.route('/api/orders/checkout', methods=['POST'])(jwt_required()(checkout))
 order_bp.route('/api/orders/my-orders', methods=['GET'])(jwt_required()(get_user_orders))
+order_bp.route('/api/orders/<int:order_id>/cancel', methods=['PUT'])(jwt_required()(cancel_order_by_user))
 
 from app.controllers.order_controller import get_my_notifications, mark_notification_read, clear_all_notifications
 
