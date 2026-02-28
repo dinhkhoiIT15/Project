@@ -11,6 +11,7 @@ import {
   EyeOff,
   Eye,
 } from "lucide-react";
+import Pagination from "../../components/common/Pagination"; // MỚI IMPORT
 
 const ManageReviews = () => {
   const [reviews, setReviews] = useState([]);
@@ -19,6 +20,10 @@ const ManageReviews = () => {
   // States cho Bộ lọc
   const [filterProductId, setFilterProductId] = useState("");
   const [filterUsername, setFilterUsername] = useState("");
+
+  // MỚI: States cho phân trang
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const { addToast } = useToast();
 
@@ -29,7 +34,7 @@ const ManageReviews = () => {
 
   useEffect(() => {
     fetchReviews();
-  }, [filterProductId, filterUsername]);
+  }, [filterProductId, filterUsername, currentPage]); // MỚI: Thêm currentPage
 
   const fetchReviews = async () => {
     // Kiểm tra xem có token Admin không trước khi gọi
@@ -41,14 +46,15 @@ const ManageReviews = () => {
 
     setLoading(true);
     try {
-      // Sử dụng thuộc tính 'params' của axios để truyền bộ lọc chuyên nghiệp và sạch sẽ hơn
       const res = await api.get("/reviews/admin/all", {
         params: {
           product_id: filterProductId || undefined,
           username: filterUsername || undefined,
+          page: currentPage, // MỚI: Truyền trang hiện tại lên API
         },
       });
       setReviews(res.data.reviews || []);
+      setTotalPages(res.data.total_pages || 1); // MỚI: Nhận tổng số trang
     } catch (err) {
       // Nếu lỗi trả về là Missing Authorization, báo lỗi đăng nhập
       if (
@@ -111,7 +117,10 @@ const ManageReviews = () => {
               placeholder="Product ID"
               className="pl-9 pr-4 py-2 bg-white border border-[#d0d7de] rounded-md text-sm outline-none w-36 shadow-sm focus:border-[#0969da]"
               value={filterProductId}
-              onChange={(e) => setFilterProductId(e.target.value)}
+              onChange={(e) => {
+                setFilterProductId(e.target.value);
+                setCurrentPage(1);
+              }}
             />
           </div>
           <div className="relative">
@@ -124,7 +133,10 @@ const ManageReviews = () => {
               placeholder="Username"
               className="pl-9 pr-4 py-2 bg-white border border-[#d0d7de] rounded-md text-sm outline-none w-48 shadow-sm focus:border-[#0969da]"
               value={filterUsername}
-              onChange={(e) => setFilterUsername(e.target.value)}
+              onChange={(e) => {
+                setFilterUsername(e.target.value);
+                setCurrentPage(1);
+              }}
             />
           </div>
         </div>
@@ -225,6 +237,13 @@ const ManageReviews = () => {
           </table>
         </div>
       </div>
+
+      {/* MỚI: Thanh phân trang */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
 
       <ConfirmDialog
         isOpen={isDeleteDialogOpen}

@@ -6,11 +6,13 @@ import Pagination from "../../components/common/Pagination";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
 import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
-import { useCart } from "../../context/CartContext"; // MỚI IMPORT
+import { useCart } from "../../context/CartContext";
 import { Loader2 } from "lucide-react";
+import { io } from "socket.io-client"; // MỚI IMPORT
 
 const Home = () => {
   const [products, setProducts] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0); // MỚI: State an toàn để trigger API
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const { addToast } = useToast();
@@ -46,7 +48,18 @@ const Home = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, [selectedCategory, currentPage, searchTerm]);
+  }, [selectedCategory, currentPage, searchTerm, refreshKey]); // MỚI: Thêm refreshKey
+
+  // MỚI: Lắng nghe tín hiệu từ Admin để tự load lại danh sách sản phẩm
+  useEffect(() => {
+    const socket = io("http://localhost:5000");
+
+    socket.on("product_list_updated", () => {
+      setRefreshKey((prev) => prev + 1); // An toàn cập nhật mà không làm loạn trạng thái filter hiện tại
+    });
+
+    return () => socket.disconnect();
+  }, []);
 
   const fetchCategories = async () => {
     try {

@@ -13,6 +13,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import Pagination from "../../components/common/Pagination"; // MỚI IMPORT
 
 const ManageProducts = () => {
   const [products, setProducts] = useState([]);
@@ -27,6 +28,10 @@ const ManageProducts = () => {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // MỚI: State cho phân trang
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   // Confirm Dialog State
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
@@ -35,16 +40,17 @@ const ManageProducts = () => {
 
   useEffect(() => {
     fetchInitialData();
-  }, []);
+  }, [currentPage]); // MỚI: Gọi lại khi chuyển trang
 
   const fetchInitialData = async () => {
     try {
       const [catRes, prodRes] = await Promise.all([
         api.get("/categories"),
-        api.get("/products"),
+        api.get("/products", { params: { page: currentPage } }), // MỚI: Truyền trang hiện tại
       ]);
       setCategories(catRes.data.categories || []);
       setProducts(prodRes.data.products || []);
+      setTotalPages(prodRes.data.total_pages || 1); // MỚI: Lưu tổng số trang
     } catch (err) {
       addToast("Fetch error", "error");
     }
@@ -263,6 +269,13 @@ const ManageProducts = () => {
               </tbody>
             </table>
           </div>
+
+          {/* MỚI: Thanh phân trang cho Products */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </div>
       </div>
     </div>

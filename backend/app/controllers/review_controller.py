@@ -125,6 +125,42 @@ def get_fake_reviews():
     return jsonify({"fake_reviews": result, "status": "success"}), 200
 
 def admin_get_all_reviews():
+    """Admin lấy toàn bộ đánh giá (Phân trang 10 items/trang)"""
+    product_id = request.args.get('product_id')
+    username = request.args.get('username') 
+    page = request.args.get('page', 1, type=int) # MỚI: Lấy số trang
+    
+    query = db.session.query(Review, User).join(User, Review.user_id == User.user_id)
+    
+    if product_id and product_id.isdigit():
+        query = query.filter(Review.product_id == int(product_id))
+    if username:
+        query = query.filter(User.username.ilike(f"%{username}%"))
+        
+    # MỚI: Phân trang giới hạn 10 items
+    pagination = query.order_by(Review.created_at.desc()).paginate(page=page, per_page=10, error_out=False)
+    reviews = pagination.items
+    
+    result = []
+    for r, u in reviews:
+        result.append({
+            "review_id": r.review_id,
+            "product_id": r.product_id,
+            "user_id": u.user_id,
+            "username": u.username,
+            "content": r.content,
+            "rating": r.rating,
+            "is_fake": r.is_fake,
+            "is_hidden": r.is_hidden, 
+            "created_at": r.created_at.strftime('%Y-%m-%d') if r.created_at else "Unknown"
+        })
+        
+    return jsonify({
+        "reviews": result, 
+        "total_pages": pagination.pages,
+        "current_page": pagination.page,
+        "status": "success"
+    }), 200
     """Admin lấy toàn bộ đánh giá, có thể lọc theo product_id và username"""
     product_id = request.args.get('product_id')
     username = request.args.get('username') # MỚI: Lọc theo tên người dùng

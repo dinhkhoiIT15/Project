@@ -3,6 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
 from app.models.models import db, User
 import datetime
+from app.extensions import socketio # MỚI IMPORT
 
 def register():
     data = request.get_json()
@@ -33,6 +34,10 @@ def register():
     try:
         db.session.add(new_user)
         db.session.commit()
+        
+        # MỚI: Báo cho Admin biết có người dùng mới để load lại bảng
+        socketio.emit('user_list_updated')
+        
         return jsonify({"message": "User registered successfully"}), 201
     except Exception as e:
         db.session.rollback()

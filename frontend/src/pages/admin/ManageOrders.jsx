@@ -3,17 +3,26 @@ import { Link } from "react-router-dom";
 import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
 import { Truck, Clock, User, DollarSign } from "lucide-react";
-import { io } from "socket.io-client"; // MỚI IMPORT
+import { io } from "socket.io-client";
+import Pagination from "../../components/common/Pagination"; // MỚI IMPORT
 
 const ManageOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // MỚI: State cho phân trang
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   const { addToast } = useToast();
 
   const fetchAllOrders = async () => {
     try {
-      const res = await api.get("/orders/all");
+      const res = await api.get("/orders/all", {
+        params: { page: currentPage }, // MỚI: Truyền số trang
+      });
       setOrders(res.data.orders);
+      setTotalPages(res.data.total_pages || 1); // MỚI: Lưu tổng số trang
     } catch (err) {
       addToast("Failed to fetch orders", "error");
     } finally {
@@ -137,6 +146,13 @@ const ManageOrders = () => {
           </tbody>
         </table>
       </div>
+
+      {/* MỚI: Component Phân trang */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 };

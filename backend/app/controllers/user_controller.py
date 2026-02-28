@@ -79,13 +79,18 @@ def change_password():
     
 # ================= MỚI: API QUẢN LÝ USER CHO ADMIN =================
 def admin_get_all_users():
-    """Admin lấy danh sách tất cả user (Có thể tìm kiếm theo username)"""
+    """Admin lấy danh sách tất cả user (Phân trang 5 user/trang)"""
     search = request.args.get('search', '')
+    page = request.args.get('page', 1, type=int) # MỚI: Lấy tham số trang hiện tại
+    
     query = User.query
     if search:
         query = query.filter(User.username.ilike(f"%{search}%"))
         
-    users = query.order_by(User.user_id.desc()).all()
+    # MỚI: Phân trang giới hạn 5 items
+    pagination = query.order_by(User.user_id.desc()).paginate(page=page, per_page=5, error_out=False)
+    users = pagination.items
+    
     result = []
     for u in users:
         result.append({
@@ -95,7 +100,14 @@ def admin_get_all_users():
             "role": u.role,
             "account_status": u.account_status
         })
-    return jsonify({"users": result, "status": "success"}), 200
+        
+    # MỚI: Trả về dữ liệu kèm tổng số trang
+    return jsonify({
+        "users": result, 
+        "total_pages": pagination.pages,
+        "current_page": pagination.page,
+        "status": "success"
+    }), 200
 
 def admin_toggle_user_status(user_id):
     """Admin Khóa / Mở khóa tài khoản"""

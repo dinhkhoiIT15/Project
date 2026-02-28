@@ -1,12 +1,36 @@
 from flask import request, jsonify
 from app.models.models import db, Product, Category, CartItem, OrderDetail, Review
 import math
+from app.extensions import socketio # MỚI IMPORT
 
 def generate_ai_description(name, category_name):
     """Tạo mô tả sản phẩm tự động bằng AI (Giả lập)"""
     return f"Professional AI description for {name} ({category_name}): This high-quality product is designed for excellence and durability."
 
 def get_all_products():
+    """Lấy danh sách sản phẩm có hỗ trợ tìm kiếm, lọc theo danh mục (Phân trang 10 items/trang)"""
+    search = request.args.get('search', '')
+    category_id = request.args.get('category_id', '')
+    page = request.args.get('page', 1, type=int) # MỚI: Rút gọn lấy page
+    
+    query = db.session.query(Product, Category.name.label('category_name')).outerjoin(
+        Category, Product.category_id == Category.category_id
+    )
+    
+    if search:
+        query = query.filter(Product.name.ilike(f'%{search}%'))
+        
+    if category_id and str(category_id).strip() != '' and str(category_id).lower() != 'null':
+        try:
+            cat_id_int = int(category_id)
+            if cat_id_int > 0:
+                query = query.filter(Product.category_id == cat_id_int)
+        except (ValueError, TypeError):
+            pass
+            
+    # MỚI: Chuẩn hóa bằng .paginate() cố định 10 items/trang
+    pagination = query.order_by(Product.product_id.desc()).paginate(page=page, per_page=10, error_out=False)
+    products = pagination.items
     """Lấy danh sách sản phẩm có hỗ trợ tìm kiếm, lọc theo danh mục và phân trang"""
     search = request.args.get('search', '')
     category_id = request.args.get('category_id', '')
@@ -113,6 +137,7 @@ def create_product():
         )
         db.session.add(new_product)
         db.session.commit()
+        socketio.emit('product_list_updated') # THÊM DÒNG NÀY
         return jsonify({
             "message": "Product created successfully", 
             "product": {"id": new_product.product_id}
@@ -141,6 +166,7 @@ def update_product(product_id):
             product.description = generate_ai_description(product.name, category.name)
 
         db.session.commit()
+        socketio.emit('product_list_updated') # THÊM DÒNG NÀY
         return jsonify({"message": "Product updated successfully"}), 200
     except Exception as e:
         db.session.rollback()
@@ -166,6 +192,7 @@ def delete_product(product_id):
         
         # 3. Lưu các thay đổi
         db.session.commit()
+        socketio.emit('product_list_updated') # THÊM DÒNG NÀY
         
         return jsonify({
             "message": "Product and all related history deleted successfully",

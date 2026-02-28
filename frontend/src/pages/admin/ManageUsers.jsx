@@ -12,12 +12,18 @@ import {
   Edit,
   X,
 } from "lucide-react";
-import { io } from "socket.io-client"; // MỚI: Thêm kết nối socket
+import { io } from "socket.io-client";
+import Pagination from "../../components/common/Pagination"; // MỚI IMPORT
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchUsername, setSearchUsername] = useState("");
+
+  // MỚI: State cho phân trang
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   const { addToast } = useToast();
 
   // States cho hộp thoại xác nhận Khóa/Mở khóa
@@ -34,6 +40,7 @@ const ManageUsers = () => {
     password: "",
   });
   const [isUpdatingInfo, setIsUpdatingInfo] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // MỚI: State an toàn để trigger API
 
   const handleEditClick = (user) => {
     setEditingUser(user);
@@ -63,15 +70,19 @@ const ManageUsers = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [searchUsername]);
+  }, [searchUsername, currentPage]); // MỚI: Lắng nghe thêm trang hiện tại
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
       const res = await api.get(`/admin/users`, {
-        params: { search: searchUsername || undefined },
+        params: {
+          search: searchUsername || undefined,
+          page: currentPage, // MỚI: Truyền số trang
+        },
       });
       setUsers(res.data.users || []);
+      setTotalPages(res.data.total_pages || 1); // MỚI: Nhận tổng số trang
     } catch (err) {
       addToast("Failed to load users", "error");
     } finally {
@@ -108,12 +119,12 @@ const ManageUsers = () => {
     }
   };
 
-  // MỚI: Lắng nghe sự kiện WebSocket để cập nhật danh sách Real-time khi Admin khác thao tác
+  // MỚI: Cập nhật lại Socket để không bị lỗi Stale Closure (gọi nhầm trang cũ)
   useEffect(() => {
     const socket = io("http://localhost:5000");
 
     socket.on("user_list_updated", () => {
-      fetchUsers();
+      setRefreshKey((prev) => prev + 1); // Kích hoạt useEffect fetchUsers một cách an toàn
     });
 
     return () => socket.disconnect();
@@ -137,7 +148,10 @@ const ManageUsers = () => {
             placeholder="Search username..."
             className="pl-9 pr-4 py-2 bg-white border border-[#d0d7de] rounded-md text-sm outline-none w-64 shadow-sm focus:border-[#0969da]"
             value={searchUsername}
-            onChange={(e) => setSearchUsername(e.target.value)}
+            onChange={(e) => {
+              setSearchUsername(e.target.value);
+              setCurrentPage(1); // MỚI: Gõ tìm kiếm thì tự quay về trang 1
+            }}
           />
         </div>
       </div>
@@ -251,6 +265,13 @@ const ManageUsers = () => {
           </table>
         </div>
       </div>
+
+      {/* MỚI: Thanh phân trang */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
 
       <ConfirmDialog
         isOpen={isConfirmOpen}
