@@ -171,7 +171,7 @@ def get_all_orders():
     """Lấy tất cả đơn hàng cho Admin (Phân trang 10 items/trang)"""
     page = request.args.get('page', 1, type=int)
     
-    # MỚI: Chuẩn hóa bằng .paginate() thay vì offset/limit
+    # Chuẩn hóa bằng .paginate() thay vì offset/limit
     pagination = Order.query.order_by(Order.order_date.desc()).paginate(page=page, per_page=10, error_out=False)
     orders = pagination.items
     
@@ -192,26 +192,6 @@ def get_all_orders():
         "total_pages": pagination.pages,
         "current_page": pagination.page
     }), 200
-    """Lấy tất cả đơn hàng cho Admin."""
-    page = int(request.args.get('page', 1))
-    per_page = int(request.args.get('per_page', 10))
-    query = Order.query.order_by(Order.order_date.desc())
-    total_count = query.count()
-    orders = query.offset((page - 1) * per_page).limit(per_page).all()
-    
-    result = []
-    for o in orders:
-        user = User.query.get(o.user_id)
-        result.append({
-            "order_id": o.order_id,
-            "customer_name": user.username if user else "Unknown",
-            "total_amount": o.total_amount,
-            "order_status": o.order_status,
-            "payment_status": o.payment_status,
-            "order_date": o.order_date.strftime('%Y-%m-%d %H:%M:%S'),
-            "shipping_address": o.shipping_address
-        })
-    return jsonify({"orders": result, "total_pages": math.ceil(total_count/per_page)}), 200
 
 # CODE MỚI: Thêm hàm get_order_by_id
 def get_order_by_id(order_id):

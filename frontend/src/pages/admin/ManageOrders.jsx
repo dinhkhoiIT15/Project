@@ -13,6 +13,7 @@ const ManageOrders = () => {
   // MỚI: State cho phân trang
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [refreshKey, setRefreshKey] = useState(0); // MỚI: State an toàn để trigger gọi lại API
 
   const { addToast } = useToast();
 
@@ -30,14 +31,16 @@ const ManageOrders = () => {
     }
   };
 
+  // useEffect 1: Chuyên xử lý việc gọi API khi đổi trang hoặc có refreshKey mới
   useEffect(() => {
     fetchAllOrders();
+  }, [currentPage, refreshKey]);
 
-    // MỚI: Khởi tạo WebSocket lắng nghe sự kiện đổi trạng thái
+  // useEffect 2: Chuyên xử lý Socket (Chỉ chạy 1 lần duy nhất khi mở trang)
+  useEffect(() => {
     const socket = io("http://localhost:5000");
 
     socket.on("order_status_changed", (data) => {
-      // Tìm đơn hàng có ID tương ứng và tự động cập nhật Status
       setOrders((prevOrders) =>
         prevOrders.map((order) =>
           order.order_id === data.order_id
@@ -51,14 +54,13 @@ const ManageOrders = () => {
       );
     });
 
-    // MỚI: Lắng nghe sự kiện khách hàng vừa đặt đơn mới
     socket.on("new_order_placed", () => {
       addToast("🛎️ New order received! Updating list...", "info");
-      fetchAllOrders(); // Tự động load lại bảng để lấy đơn hàng mới nhất
+      setRefreshKey((prev) => prev + 1); // An toàn: Gọi fetchAllOrders gián tiếp thông qua refreshKey
     });
 
     return () => socket.disconnect();
-  }, []); // <-- Cập nhật xong đoạn này
+  }, []);
 
   const handleStatusUpdate = async (id, status) => {
     try {

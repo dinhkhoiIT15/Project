@@ -3,6 +3,10 @@ module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      // MỚI: Cài đặt Titillium Web làm font mặc định cho toàn hệ thống
+      fontFamily: {
+        sans: ['"Titillium Web"', "sans-serif"],
+      },
       colors: {
         primary: {
           50: "#f6f8fa",

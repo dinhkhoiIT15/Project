@@ -1,7 +1,6 @@
 # MỚI: BẮT BUỘC PHẢI CÓ 2 DÒNG NÀY Ở TRÊN CÙNG ĐỂ SỬA LỖI EVENTLET TRÊN WINDOWS
 import eventlet
 eventlet.monkey_patch()
-
 from flask import Flask
 from flask_cors import CORS # MỚI THÊM 1: Nạp thư viện CORS
 from config import Config
@@ -13,7 +12,7 @@ from app.routes.product_routes import product_bp
 from app.routes.review_routes import review_bp
 from app.routes.cart_routes import cart_bp 
 from app.routes.order_routes import order_bp
-
+from app.routes.dashboard_routes import dashboard_bp # MỚI IMPORT
 from flask_jwt_extended import JWTManager
 from werkzeug.security import generate_password_hash
 from flask_socketio import join_room, leave_room
@@ -58,6 +57,7 @@ def create_app():
     app.register_blueprint(review_bp)
     app.register_blueprint(cart_bp) 
     app.register_blueprint(order_bp)
+    app.register_blueprint(dashboard_bp) # MỚI: Đăng ký dashboard API
     
     with app.app_context():
         # Tạo tất cả các bảng nếu chưa có

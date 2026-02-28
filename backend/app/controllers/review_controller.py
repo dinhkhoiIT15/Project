@@ -62,7 +62,7 @@ def add_review():
         }
         
         socketio.emit('new_review', review_data, to=f'product_{product_id}')
-        
+        socketio.emit('review_list_updated') # MỚI: Báo cho Dashboard
         return jsonify({"message": "Review added successfully", "status": "success"}), 201
     except Exception as e:
         db.session.rollback()
@@ -216,6 +216,7 @@ def delete_review(review_id):
         }, to=f'user_{user_id}')
         
         socketio.emit('review_deleted', {"review_id": review_id}, to=f'product_{product_id}')
+        socketio.emit('review_list_updated') # MỚI: Báo cho Dashboard
         return jsonify({"message": "Review deleted successfully"}), 200
     except Exception:
         db.session.rollback()
@@ -234,7 +235,8 @@ def toggle_hide_review(review_id):
         socketio.emit('review_deleted', {"review_id": review_id}, to=f'product_{review.product_id}')
     else:
         socketio.emit('review_unhidden', {}, to=f'product_{review.product_id}') # Báo reset
-        
+
+    socketio.emit('review_list_updated') # MỚI: Báo cho Dashboard 
     return jsonify({"message": "Status updated", "is_hidden": review.is_hidden}), 200
 
 # ================= MỚI: API CHO CUSTOMER SỬA/XÓA ĐÁNH GIÁ =================
@@ -262,6 +264,7 @@ def update_review(review_id):
         "content": review.content,
         "rating": review.rating
     }, to=f'product_{review.product_id}')
+    socketio.emit('review_list_updated') # MỚI: Báo cho Dashboard
     
     return jsonify({"message": "Review updated successfully", "status": "success"}), 200
 
@@ -282,5 +285,6 @@ def user_delete_review(review_id):
     socketio.emit('review_deleted', {
         "review_id": review_id
     }, to=f'product_{product_id}')
+    socketio.emit('review_list_updated') # MỚI: Báo cho Dashboard
     
     return jsonify({"message": "Review deleted successfully", "status": "success"}), 200
