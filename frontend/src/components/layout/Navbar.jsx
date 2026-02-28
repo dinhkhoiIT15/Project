@@ -17,7 +17,7 @@ import Login from "../../pages/auth/Login";
 import Register from "../../pages/auth/Register";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
-import { useToast } from "../../context/ToastContext"; // MỚI IMPORT
+import { useToast } from "../../context/ToastContext";
 import api from "../../services/api";
 import { io } from "socket.io-client";
 
@@ -39,54 +39,47 @@ const Navbar = () => {
   const [sidebarView, setSidebarView] = useState("login");
 
   const { user, isAuthenticated, logout } = useAuth();
-  const { cartCount, fetchCartCount } = useCart(); // MỚI: Thêm fetchCartCount
-  const { addToast } = useToast(); // MỚI: Khai báo addToast
+  const { cartCount, fetchCartCount } = useCart();
+  const { addToast } = useToast();
 
-  // ----- STATES CHO LIVE SEARCH -----
   const [searchTerm, setSearchTerm] = useState("");
   const [liveResults, setLiveResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const searchRef = useRef(null);
 
-  // ----- MỚI: THÔNG BÁO STATE -----
   const [notifications, setNotifications] = useState([]);
   const [showNotif, setShowNotif] = useState(false);
   const unreadCount = notifications.filter((n) => !n.is_read).length;
   const notifRef = useRef(null);
 
-  // MỚI: Gọi API lấy thông báo và kết nối Socket ngầm khi User đã đăng nhập
   useEffect(() => {
     let socketInstance = null;
-    let isMounted = true; // Cờ kiểm tra trạng thái component
+    let isMounted = true;
 
     if (isAuthenticated) {
       api
         .get("/orders/notifications")
         .then((res) => {
-          if (!isMounted) return; // Nếu React đã tháo component, DỪNG LẠI KHÔNG TẠO SOCKET NỮA!
+          if (!isMounted) return;
 
           setNotifications(res.data.notifications || []);
           const myUserId = res.data.user_id;
 
-          // Kết nối phòng bí mật
           socketInstance = io("http://localhost:5000");
           socketInstance.emit("join_personal", { user_id: myUserId });
 
           socketInstance.on("new_notification", (notif) => {
             setNotifications((prev) => {
-              // CHỐNG TRÙNG LẶP 100%: Kiểm tra xem thông báo này đã có trong danh sách chưa
               if (prev.some((n) => n.id === notif.id)) return prev;
               return [notif, ...prev];
             });
           });
 
-          // MỚI: Lắng nghe sự kiện giỏ hàng được hoàn trả
           socketInstance.on("cart_updated", () => {
             fetchCartCount();
           });
 
-          // MỚI NHẤT: Lắng nghe sự kiện bị khóa tài khoản (ép văng ra ngoài)
           socketInstance.on("force_logout", (data) => {
             addToast(data.message || "Your account has been locked.", "error");
             logout();
@@ -95,14 +88,12 @@ const Navbar = () => {
         .catch((err) => console.error(err));
     }
 
-    // Hàm dọn dẹp (Cleanup)
     return () => {
       isMounted = false;
       if (socketInstance) socketInstance.disconnect();
     };
   }, [isAuthenticated]);
 
-  // Click ra ngoài thì tắt dropdown chuông
   useEffect(() => {
     const handleClickOutsideNotif = (e) => {
       if (notifRef.current && !notifRef.current.contains(e.target))
@@ -129,7 +120,6 @@ const Navbar = () => {
     }
     setShowNotif(false);
     if (notif.order_id !== 0) {
-      // CHẶN CHUYỂN TRANG NẾU LÀ THÔNG BÁO XÓA REVIEW
       navigate(`/order/${notif.order_id}`);
     }
   };
@@ -295,7 +285,6 @@ const Navbar = () => {
 
             <div className="h-5 w-px bg-[#d0d7de] mx-1" />
 
-            {/* MỚI: QUẢ CHUÔNG THÔNG BÁO */}
             {isAuthenticated && (
               <div className="relative flex items-center" ref={notifRef}>
                 <button
@@ -315,7 +304,6 @@ const Navbar = () => {
                   )}
                 </button>
 
-                {/* Dropdown Danh sách Thông báo */}
                 {showNotif && (
                   <div className="absolute top-full mt-3 right-0 w-[320px] bg-white border border-[#d0d7de] rounded-xl shadow-2xl z-50 overflow-hidden animate-fade-in">
                     <div className="p-4 border-b border-[#d0d7de] flex justify-between items-center bg-white sticky top-0">
@@ -362,7 +350,6 @@ const Navbar = () => {
               </div>
             )}
 
-            {/* MỚI: Thiết kế Badge giỏ hàng đè lên Icon */}
             <Link
               to="/cart"
               className="relative p-2 text-[#6e7781] hover:text-[#0969da] hover:bg-[#f6f8fa] rounded-full transition-all"

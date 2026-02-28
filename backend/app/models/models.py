@@ -37,7 +37,7 @@ class Review(db.Model):
     content = db.Column(db.Text, nullable=False)
     rating = db.Column(db.Integer, default=5)
     is_fake = db.Column(db.Boolean, default=False)
-    is_hidden = db.Column(db.Boolean, default=False) # MỚI: Trạng thái bị Admin ẩn
+    is_hidden = db.Column(db.Boolean, default=False) 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Order(db.Model):
@@ -73,12 +73,11 @@ class CartItem(db.Model):
     product_id = db.Column(db.Integer, db.ForeignKey('products.product_id'))
     quantity = db.Column(db.Integer, default=1)
 
-# MỚI: Bảng thông báo trạng thái đơn hàng
 class Notification(db.Model):
     __tablename__ = 'notifications'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id')) # Người NHẬN thông báo
-    order_id = db.Column(db.Integer) # Để click vào sẽ nhảy tới trang chi tiết đơn hàng đó
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id')) 
+    order_id = db.Column(db.Integer) 
     message = db.Column(db.Text)
     is_read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

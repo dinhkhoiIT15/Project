@@ -1,18 +1,17 @@
-# MỚI: BẮT BUỘC PHẢI CÓ 2 DÒNG NÀY Ở TRÊN CÙNG ĐỂ SỬA LỖI EVENTLET TRÊN WINDOWS
 import eventlet
 eventlet.monkey_patch()
 from flask import Flask
-from flask_cors import CORS # MỚI THÊM 1: Nạp thư viện CORS
+from flask_cors import CORS 
 from config import Config
 from app.models.models import db, User
-from app.routes.auth_routes import auth_bp # MỚI THÊM: Nạp blueprint auth
+from app.routes.auth_routes import auth_bp 
 from app.routes.user_routes import user_bp 
 from app.routes.category_routes import category_bp
 from app.routes.product_routes import product_bp
 from app.routes.review_routes import review_bp
 from app.routes.cart_routes import cart_bp 
 from app.routes.order_routes import order_bp
-from app.routes.dashboard_routes import dashboard_bp # MỚI IMPORT
+from app.routes.dashboard_routes import dashboard_bp 
 from flask_jwt_extended import JWTManager
 from werkzeug.security import generate_password_hash
 from flask_socketio import join_room, leave_room
@@ -21,49 +20,43 @@ from app.extensions import socketio
 def create_app():
     app = Flask(__name__)
     
-    CORS(app) # MỚI THÊM 2: Bật CORS, cho phép Front-end (cổng 3000) gọi API
+    CORS(app) 
     
     app.config.from_object(Config)
     app.config['JWT_SECRET_KEY'] = 'my-secret-ecommerce-ai-key-2024'
     db.init_app(app)
 
     jwt = JWTManager(app)
-    socketio.init_app(app) # MỚI: Khởi tạo SocketIO kết nối với App
+    socketio.init_app(app) 
     
-    # MỚI: Xử lý sự kiện người dùng VÀO trang chi tiết sản phẩm
     @socketio.on('join')
     def on_join(data):
-        room = data['room'] # VD: 'product_1'
+        room = data['room'] 
         join_room(room)
 
-    # MỚI: Xử lý sự kiện THOÁT phòng (Bạn bị thiếu đoạn này)
     @socketio.on('leave')
     def on_leave(data):
         room = data['room']
         leave_room(room)
 
-    # MỚI: Xử lý sự kiện User VÀO phòng cá nhân để nhận thông báo
     @socketio.on('join_personal')
     def on_join_personal(data):
         user_id = data.get('user_id')
         if user_id:
             join_room(f"user_{user_id}")
     
-    # Đăng ký các đường dẫn (Routes) vào ứng dụng
-    app.register_blueprint(auth_bp) # MỚI THÊM: Đăng ký auth routes
+    app.register_blueprint(auth_bp) 
     app.register_blueprint(user_bp)
     app.register_blueprint(category_bp)
     app.register_blueprint(product_bp)
     app.register_blueprint(review_bp)
     app.register_blueprint(cart_bp) 
     app.register_blueprint(order_bp)
-    app.register_blueprint(dashboard_bp) # MỚI: Đăng ký dashboard API
+    app.register_blueprint(dashboard_bp) 
     
     with app.app_context():
-        # Tạo tất cả các bảng nếu chưa có
         db.create_all()
         
-        # Tự động khởi tạo tài khoản Admin
         admin_user = User.query.filter_by(username='admin').first()
         if not admin_user:
             hashed_password = generate_password_hash('admin123')
@@ -81,5 +74,4 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    # MỚI: Chạy server bằng socketio thay vì app.run
     socketio.run(app, debug=True, port=5000)

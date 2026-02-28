@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
 from app.models.models import db, User
 import datetime
-from app.extensions import socketio # MỚI IMPORT
+from app.extensions import socketio 
 
 def register():
     data = request.get_json()
@@ -35,7 +35,6 @@ def register():
         db.session.add(new_user)
         db.session.commit()
         
-        # MỚI: Báo cho Admin biết có người dùng mới để load lại bảng
         socketio.emit('user_list_updated')
         
         return jsonify({"message": "User registered successfully"}), 201
@@ -60,7 +59,6 @@ def login():
     if user.account_status != 'activated':
         return jsonify({"message": "Account is locked. Please contact Admin."}), 403
         
-    # Tạo Access Token
     access_token = create_access_token(
         identity=str(user.user_id),
         expires_delta=datetime.timedelta(days=1)
@@ -72,12 +70,11 @@ def login():
         "user": {
             "id": user.user_id,
             "username": user.username,
-            "role": user.role # Gửi role về để Frontend quyết định lưu vào đâu
+            "role": user.role
         }
     }), 200
 
 def logout():
-    """API Logout (Dùng để mở rộng Blocklist Token nếu cần bảo mật cao hơn)"""
     return jsonify({
         "message": "Successfully logged out", 
         "status": "success"

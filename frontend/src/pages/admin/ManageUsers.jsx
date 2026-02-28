@@ -13,25 +13,22 @@ import {
   X,
 } from "lucide-react";
 import { io } from "socket.io-client";
-import Pagination from "../../components/common/Pagination"; // MỚI IMPORT
+import Pagination from "../../components/common/Pagination";
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchUsername, setSearchUsername] = useState("");
 
-  // MỚI: State cho phân trang
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   const { addToast } = useToast();
 
-  // States cho hộp thoại xác nhận Khóa/Mở khóa
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [userToToggle, setUserToToggle] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // MỚI: States cho chức năng Edit User
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -40,11 +37,10 @@ const ManageUsers = () => {
     password: "",
   });
   const [isUpdatingInfo, setIsUpdatingInfo] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0); // MỚI: State an toàn để trigger API
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleEditClick = (user) => {
     setEditingUser(user);
-    // Điền sẵn thông tin cũ, chừa trống password
     setEditForm({
       phone_number: user.phone_number || "",
       address: user.address || "",
@@ -60,7 +56,7 @@ const ManageUsers = () => {
       await api.put(`/admin/users/${editingUser.id}/info`, editForm);
       addToast("User information updated successfully", "success");
       setIsEditModalOpen(false);
-      fetchUsers(); // Tải lại danh sách
+      fetchUsers();
     } catch (err) {
       addToast(err.response?.data?.message || "Failed to update info", "error");
     } finally {
@@ -70,7 +66,7 @@ const ManageUsers = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [searchUsername, currentPage]); // MỚI: Lắng nghe thêm trang hiện tại
+  }, [searchUsername, currentPage]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -78,11 +74,11 @@ const ManageUsers = () => {
       const res = await api.get(`/admin/users`, {
         params: {
           search: searchUsername || undefined,
-          page: currentPage, // MỚI: Truyền số trang
+          page: currentPage,
         },
       });
       setUsers(res.data.users || []);
-      setTotalPages(res.data.total_pages || 1); // MỚI: Nhận tổng số trang
+      setTotalPages(res.data.total_pages || 1);
     } catch (err) {
       addToast("Failed to load users", "error");
     } finally {
@@ -119,17 +115,15 @@ const ManageUsers = () => {
     }
   };
 
-  // MỚI: Cập nhật lại Socket để không bị lỗi Stale Closure (gọi nhầm trang cũ)
   useEffect(() => {
     const socket = io("http://localhost:5000");
 
     socket.on("user_list_updated", () => {
-      setRefreshKey((prev) => prev + 1); // Kích hoạt useEffect fetchUsers một cách an toàn
+      setRefreshKey((prev) => prev + 1);
     });
 
     return () => socket.disconnect();
   }, []);
-  // ĐÃ XÓA HÀM handleRoleChange Ở ĐÂY
 
   return (
     <div className="p-6">
@@ -150,7 +144,7 @@ const ManageUsers = () => {
             value={searchUsername}
             onChange={(e) => {
               setSearchUsername(e.target.value);
-              setCurrentPage(1); // MỚI: Gõ tìm kiếm thì tự quay về trang 1
+              setCurrentPage(1);
             }}
           />
         </div>
@@ -205,7 +199,6 @@ const ManageUsers = () => {
                       {u.phone_number || "N/A"}
                     </td>
                     <td className="p-4">
-                      {/* HIỂN THỊ ROLE DẠNG BADGE CỐ ĐỊNH, KHÔNG THỂ CHỈNH SỬA */}
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
                           u.role === "Admin"
@@ -228,7 +221,6 @@ const ManageUsers = () => {
                       )}
                     </td>
                     <td className="p-4 text-center flex items-center justify-center gap-2">
-                      {/* MỚI: Nút Edit */}
                       <button
                         onClick={() => handleEditClick(u)}
                         className="p-2 rounded transition-colors text-[#6e7781] hover:text-[#0969da] hover:bg-[#ddf4ff]"
@@ -237,7 +229,6 @@ const ManageUsers = () => {
                         <Edit size={18} />
                       </button>
 
-                      {/* Nút Khóa/Mở khóa cũ */}
                       <button
                         onClick={() => handleToggleClick(u)}
                         className={`p-2 rounded transition-colors ${
@@ -266,7 +257,6 @@ const ManageUsers = () => {
         </div>
       </div>
 
-      {/* MỚI: Thanh phân trang */}
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}
@@ -298,7 +288,6 @@ const ManageUsers = () => {
         isLoading={isProcessing}
       />
 
-      {/* MỚI: MODAL CHỈNH SỬA THÔNG TIN */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in">
           <div

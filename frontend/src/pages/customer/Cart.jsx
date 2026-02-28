@@ -4,7 +4,7 @@ import Navbar from "../../components/layout/Navbar";
 import Button from "../../components/common/Button";
 import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
-import { useCart } from "../../context/CartContext"; // MỚI IMPORT
+import { useCart } from "../../context/CartContext";
 import { ShoppingCart, CreditCard, ArrowLeft } from "lucide-react";
 import CartItem from "../../components/cart/CartItem";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
@@ -13,7 +13,7 @@ const Cart = () => {
   const [cart, setCart] = useState({ cart_items: [], total_price: 0 });
   const [loading, setLoading] = useState(true);
   const { addToast } = useToast();
-  const { fetchCartCount } = useCart(); // MỚI
+  const { fetchCartCount } = useCart();
 
   useEffect(() => {
     fetchCart();
@@ -23,7 +23,7 @@ const Cart = () => {
     try {
       const res = await api.get("/cart");
       setCart(res.data);
-      fetchCartCount(); // MỚI: Đồng bộ số lượng để chắc chắn Navbar luôn đúng
+      fetchCartCount();
     } catch (err) {
       addToast("Failed to load your cart", "error");
     } finally {
@@ -35,7 +35,7 @@ const Cart = () => {
     if (newQty < 1) return;
     try {
       await api.put(`/cart/${itemId}`, { quantity: newQty });
-      fetchCart(); // Hàm này chạy sẽ tự động kéo theo fetchCartCount() ở trên
+      fetchCart();
       addToast("Cart updated successfully!", "success");
     } catch (err) {
       addToast("Failed to update quantity", "error");
@@ -45,7 +45,7 @@ const Cart = () => {
   const handleRemove = async (itemId) => {
     try {
       await api.delete(`/cart/${itemId}`);
-      fetchCart(); // Hàm này chạy sẽ tự động kéo theo fetchCartCount() ở trên
+      fetchCart();
       addToast("Item has been removed from your cart", "info");
     } catch (err) {
       addToast("Failed to remove item", "error");

@@ -3,7 +3,6 @@ module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
-      // MỚI: Cài đặt Titillium Web làm font mặc định cho toàn hệ thống
       fontFamily: {
         sans: ['"Titillium Web"', "sans-serif"],
       },
@@ -16,7 +15,6 @@ module.exports = {
           700: "#013d8d",
           900: "#0a3069",
         },
-        // MỚI: GitHub Danger Palette
         danger: {
           50: "#fff8f7",
           100: "#ffebe9",

@@ -1,17 +1,16 @@
 from flask import request, jsonify
 from app.models.models import db, Product, Category, CartItem, OrderDetail, Review
 import math
-from app.extensions import socketio # MỚI IMPORT
+from app.extensions import socketio 
 
 def generate_ai_description(name, category_name):
     """Tạo mô tả sản phẩm tự động bằng AI (Giả lập)"""
     return f"Professional AI description for {name} ({category_name}): This high-quality product is designed for excellence and durability."
 
 def get_all_products():
-    """Lấy danh sách sản phẩm có hỗ trợ tìm kiếm, lọc theo danh mục (Phân trang 10 items/trang)"""
     search = request.args.get('search', '')
     category_id = request.args.get('category_id', '')
-    page = request.args.get('page', 1, type=int) # MỚI: Rút gọn lấy page
+    page = request.args.get('page', 1, type=int) 
     
     query = db.session.query(Product, Category.name.label('category_name')).outerjoin(
         Category, Product.category_id == Category.category_id
@@ -28,10 +27,8 @@ def get_all_products():
         except (ValueError, TypeError):
             pass
             
-    # MỚI: Chuẩn hóa bằng .paginate() cố định 10 items/trang
     pagination = query.order_by(Product.product_id.desc()).paginate(page=page, per_page=10, error_out=False)
     products = pagination.items
-    """Lấy danh sách sản phẩm có hỗ trợ tìm kiếm, lọc theo danh mục và phân trang"""
     search = request.args.get('search', '')
     category_id = request.args.get('category_id', '')
     
@@ -46,19 +43,15 @@ def get_all_products():
         Category, Product.category_id == Category.category_id
     )
     
-    # Lọc theo từ khóa tìm kiếm
     if search:
         query = query.filter(Product.name.ilike(f'%{search}%'))
         
-    # SỬA LỖI TẠI ĐÂY: Thụt đầu dòng đúng cho khối lệnh bên trong 'if'
     if category_id and str(category_id).strip() != '' and str(category_id).lower() != 'null':
         try:
             cat_id_int = int(category_id)
-            # Chỉ thực hiện filter nếu ID là một số nguyên hợp lệ lớn hơn 0
             if cat_id_int > 0:
                 query = query.filter(Product.category_id == cat_id_int)
         except (ValueError, TypeError):
-            # Nếu ID không phải là số (chuỗi rác), bỏ qua filter để trả về toàn bộ sản phẩm
             pass
             
     total_count = query.count()
@@ -87,7 +80,6 @@ def get_all_products():
     }), 200
 
 def get_product_by_id(product_id):
-    """Lấy chi tiết một sản phẩm theo ID"""
     data = db.session.query(Product, Category.name.label('category_name')).outerjoin(
         Category, Product.category_id == Category.category_id
     ).filter(Product.product_id == product_id).first()
@@ -97,7 +89,6 @@ def get_product_by_id(product_id):
         
     p, cat_name = data
 
-    # MỚI: Tính toán thống kê Review
     reviews = Review.query.filter_by(product_id=product_id, is_fake=False).all()
     avg_rating = sum(r.rating for r in reviews) / len(reviews) if reviews else 0
 
@@ -118,7 +109,6 @@ def get_product_by_id(product_id):
     }), 200
 
 def create_product():
-    """Tạo sản phẩm mới và tự động tạo mô tả bằng AI"""
     data = request.get_json()
     try:
         category = Category.query.get(int(data.get('category_id')))
@@ -137,7 +127,7 @@ def create_product():
         )
         db.session.add(new_product)
         db.session.commit()
-        socketio.emit('product_list_updated') # THÊM DÒNG NÀY
+        socketio.emit('product_list_updated') 
         return jsonify({
             "message": "Product created successfully", 
             "product": {"id": new_product.product_id}
@@ -147,7 +137,6 @@ def create_product():
         return jsonify({"message": f"Create error: {str(e)}"}), 500
 
 def update_product(product_id):
-    """Cập nhật thông tin sản phẩm"""
     data = request.get_json()
     product = Product.query.get(product_id)
     
@@ -166,33 +155,26 @@ def update_product(product_id):
             product.description = generate_ai_description(product.name, category.name)
 
         db.session.commit()
-        socketio.emit('product_list_updated') # THÊM DÒNG NÀY
+        socketio.emit('product_list_updated')
         return jsonify({"message": "Product updated successfully"}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({"message": f"Update error: {str(e)}"}), 500
 
 def delete_product(product_id):
-    """
-    Xóa sản phẩm và toàn bộ lịch sử liên quan (OrderDetail, Cart, Reviews).
-    Cho phép Admin dọn dẹp Database ngay cả khi sản phẩm đã có lịch sử đơn hàng.
-    """
     product = Product.query.get(product_id)
     if not product:
         return jsonify({"message": "Product not found"}), 404
         
     try:
-        # 1. Xóa các bản ghi ở các bảng tham chiếu trước để tránh lỗi Foreign Key Constraint
         OrderDetail.query.filter_by(product_id=product_id).delete()
         CartItem.query.filter_by(product_id=product_id).delete()
         Review.query.filter_by(product_id=product_id).delete()
 
-        # 2. Xóa bản ghi sản phẩm chính
         db.session.delete(product)
         
-        # 3. Lưu các thay đổi
         db.session.commit()
-        socketio.emit('product_list_updated') # THÊM DÒNG NÀY
+        socketio.emit('product_list_updated') 
         
         return jsonify({
             "message": "Product and all related history deleted successfully",

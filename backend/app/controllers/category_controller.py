@@ -1,9 +1,8 @@
 from flask import request, jsonify
-from app.models.models import db, Category, Product # Import thêm Product để check an toàn
+from app.models.models import db, Category, Product 
 import math
 
 def get_all_categories():
-    """Lấy danh sách tất cả category"""
     categories = Category.query.all()
     result = []
     for cat in categories:
@@ -15,7 +14,6 @@ def get_all_categories():
     return jsonify({"categories": result, "status": "success"}), 200
 
 def create_category():
-    """Tạo category mới"""
     data = request.get_json()
     if not data or not data.get('name'):
         return jsonify({"message": "Category name is required"}), 400
@@ -33,14 +31,11 @@ def create_category():
         return jsonify({"message": "Server error"}), 500
 
 def update_category(category_id):
-    """Cập nhật thông tin danh mục"""
     data = request.get_json()
     category = Category.query.get(category_id)
-    
     if not category:
         return jsonify({"message": "Category not found"}), 404
         
-    # Kiểm tra trùng tên với danh mục khác
     if 'name' in data and data['name'] != category.name:
         if Category.query.filter_by(name=data['name']).first():
             return jsonify({"message": "New category name already exists"}), 409
@@ -57,12 +52,10 @@ def update_category(category_id):
         return jsonify({"message": "Update failed"}), 500
 
 def delete_category(category_id):
-    """Xóa danh mục kèm kiểm tra ràng buộc"""
     category = Category.query.get(category_id)
     if not category:
         return jsonify({"message": "Category not found"}), 404
         
-    # KIỂM TRA AN TOÀN: Không cho xóa nếu có sản phẩm thuộc danh mục này
     linked_product = Product.query.filter_by(category_id=category_id).first()
     if linked_product:
         return jsonify({

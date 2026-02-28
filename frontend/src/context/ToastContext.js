@@ -11,7 +11,6 @@ export const ToastProvider = ({ children }) => {
   const addToast = useCallback((message, type = "success") => {
     const id = Date.now();
     setToasts((prev) => [...prev, { id, message, type }]);
-    // Tự động xóa sau 3 giây
     setTimeout(() => {
       removeToast(id);
     }, 3000);
@@ -24,7 +23,6 @@ export const ToastProvider = ({ children }) => {
   return (
     <ToastContext.Provider value={{ addToast }}>
       {children}
-      {/* Container chứa thông báo ở góc trên bên phải */}
       <div className="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none">
         {toasts.map((toast) => (
           <div

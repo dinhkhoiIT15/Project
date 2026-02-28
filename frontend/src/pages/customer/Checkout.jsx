@@ -5,18 +5,17 @@ import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
-import { useCart } from "../../context/CartContext"; // MỚI: Thêm useCart
+import { useCart } from "../../context/CartContext";
 import { ShieldCheck, Truck } from "lucide-react";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
-  const { fetchCartCount } = useCart(); // MỚI: Lấy hàm cập nhật giỏ hàng
+  const { fetchCartCount } = useCart();
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Lấy thông tin địa chỉ mặc định từ hồ sơ người dùng
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -38,15 +37,13 @@ const Checkout = () => {
 
     setLoading(true);
     try {
-      // Chỉ gửi yêu cầu thanh toán COD lên Backend
       await api.post("/orders/checkout", {
         shipping_address: address,
         payment_method: "COD",
       });
 
       addToast("Order placed successfully! Thank you.", "success");
-      fetchCartCount(); // MỚI: Lập tức cập nhật lại số chấm đỏ trên giỏ hàng
-      // Chuyển hướng người dùng về trang danh sách đơn hàng sau khi đặt thành công
+      fetchCartCount();
       navigate("/my-orders");
     } catch (err) {
       const errorMsg =
@@ -61,7 +58,6 @@ const Checkout = () => {
     <div className="min-h-screen bg-white">
       <Navbar />
       <main className="max-w-3xl mx-auto px-4 py-8">
-        {/* Hệ thống dẫn hướng Breadcrumbs */}
         <Breadcrumbs>
           <Breadcrumbs.Item to="/">Home</Breadcrumbs.Item>
           <Breadcrumbs.Divider />
@@ -77,7 +73,6 @@ const Checkout = () => {
 
         <div className="bg-white p-10 rounded-xl border border-[#d0d7de] shadow-sm">
           <form onSubmit={handleCheckout} className="space-y-8">
-            {/* Nhập địa chỉ giao hàng */}
             <Input
               label="Shipping Address"
               value={address}
@@ -90,7 +85,6 @@ const Checkout = () => {
               <h2 className="text-lg font-bold mb-4 text-[#1f2328]">
                 Payment Method
               </h2>
-              {/* Chỉ hiển thị tùy chọn COD duy nhất theo yêu cầu */}
               <div className="grid gap-4">
                 <label className="flex items-center p-4 border border-[#0969da] bg-[#ddf4ff]/30 rounded-lg cursor-default transition-all shadow-sm">
                   <div className="w-5 h-5 rounded-full border-4 border-[#0969da] flex items-center justify-center bg-white">

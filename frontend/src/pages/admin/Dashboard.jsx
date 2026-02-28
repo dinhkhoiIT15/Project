@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import api from "../../services/api";
 import { Link } from "react-router-dom";
-import { io } from "socket.io-client"; // MỚI IMPORT
+import { io } from "socket.io-client";
 import {
   LineChart,
   Line,
@@ -22,7 +22,7 @@ import {
   Pie,
   Cell,
   Legend,
-  Label, // MỚI: Import thêm Label để chèn text vào giữa
+  Label,
 } from "recharts";
 
 const COLORS = ["#0969da", "#1a7f37", "#bf3989", "#cf222e", "#8250df"];
@@ -30,14 +30,12 @@ const COLORS = ["#0969da", "#1a7f37", "#bf3989", "#cf222e", "#8250df"];
 const Dashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshKey, setRefreshKey] = useState(0); // MỚI: Kích hoạt gọi lại API an toàn
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Lắng nghe thay đổi refreshKey để gọi API
   useEffect(() => {
     fetchDashboardData();
   }, [refreshKey]);
 
-  // MỚI: Lắng nghe toàn bộ sự kiện Socket của hệ thống E-commerce
   useEffect(() => {
     const socket = io("http://localhost:5000");
 
@@ -45,12 +43,11 @@ const Dashboard = () => {
       setRefreshKey((prev) => prev + 1);
     };
 
-    // Lắng nghe các thay đổi từ mọi nơi
-    socket.on("new_order_placed", handleRefresh); // Khách đặt hàng mới
-    socket.on("order_status_changed", handleRefresh); // Đổi trạng thái đơn hàng (nhảy biểu đồ)
-    socket.on("product_list_updated", handleRefresh); // Kho hàng thay đổi
-    socket.on("user_list_updated", handleRefresh); // Có khách đăng ký mới
-    socket.on("review_list_updated", handleRefresh); // Review rác mới được gửi
+    socket.on("new_order_placed", handleRefresh);
+    socket.on("order_status_changed", handleRefresh);
+    socket.on("product_list_updated", handleRefresh);
+    socket.on("user_list_updated", handleRefresh);
+    socket.on("review_list_updated", handleRefresh);
 
     return () => socket.disconnect();
   }, []);
@@ -102,12 +99,11 @@ const Dashboard = () => {
       bg: "bg-[#f5f0ff]",
     },
     {
-      title: "Total Customers", // Đổi tên cho chuẩn nghĩa
+      title: "Total Customers",
       value: data.kpi.customers,
       icon: <Users size={20} />,
       color: "text-[#bf3989]",
       bg: "bg-[#fff0f7]",
-      // MỚI: Bổ sung element giao diện cho Active/Locked
       extra: (
         <div className="flex gap-2 mt-1.5 text-[10px] font-bold">
           <span className="text-[#1a7f37] bg-[#dafbe1] px-1.5 py-0.5 rounded">
@@ -121,7 +117,6 @@ const Dashboard = () => {
     },
   ];
 
-  // MỚI: Tính toán tỷ lệ phần trăm đơn hàng Completed
   const totalStatusOrders = data.charts.order_status.reduce(
     (sum, item) => sum + item.value,
     0,
@@ -140,23 +135,19 @@ const Dashboard = () => {
         System Dashboard
       </h1>
 
-      {/* KPI CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {stats.map((stat, index) => (
           <div
             key={index}
             className="bg-white p-6 rounded-xl border border-[#d0d7de] shadow-sm hover:border-[#0969da] hover:shadow-md transition-all flex flex-col justify-start"
           >
-            {/* Dòng 1: Cố định vị trí Icon và Thông số ngang hàng nhau */}
             <div className="flex items-center w-full">
-              {/* Khối Icon bên trái: Ép kích thước cứng để tránh móp méo */}
               <div
                 className={`w-[52px] h-[52px] flex items-center justify-center rounded-xl ${stat.bg} ${stat.color} mr-5 flex-shrink-0`}
               >
                 {stat.icon}
               </div>
 
-              {/* Khối Stack Text dọc bên phải */}
               <div className="flex flex-col items-start w-full">
                 <span className="text-[12px] font-bold text-[#6e7781] uppercase tracking-wider mb-1">
                   {stat.title}
@@ -167,15 +158,12 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Dòng 2: Huy hiệu (Được đẩy xuống dưới một tí và thụt lề bằng đúng Icon) */}
             {stat.extra && <div className="ml-[72px] mt-2">{stat.extra}</div>}
           </div>
         ))}
       </div>
 
-      {/* CHARTS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        {/* Doanh thu 7 ngày */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-[#d0d7de] shadow-sm">
           <h3 className="text-sm font-bold text-[#1f2328] mb-6">
             Revenue Trend (Last 7 Days)
@@ -226,7 +214,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Trạng thái đơn hàng */}
         <div className="bg-white p-6 rounded-xl border border-[#d0d7de] shadow-sm flex flex-col">
           <h3 className="text-sm font-bold text-[#1f2328] mb-2">
             Order Status Distribution
@@ -250,10 +237,8 @@ const Dashboard = () => {
                       stroke="none"
                     />
                   ))}
-                  {/* MỚI: Chèn nội dung text vào chính giữa tâm của biểu đồ */}
                   <Label
                     content={({ viewBox: { cx, cy } }) => {
-                      // Đảm bảo Recharts đã tính toán xong tọa độ
                       if (!cx || !cy) return null;
                       return (
                         <g>
@@ -305,9 +290,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* ALERTS & LISTS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Đơn hàng cần duyệt */}
         <div className="bg-white border border-[#d0d7de] rounded-xl shadow-sm overflow-hidden">
           <div className="bg-[#f6f8fa] px-4 py-3 border-b border-[#d0d7de] flex items-center justify-between">
             <h3 className="text-sm font-bold text-[#1f2328] flex items-center gap-2">
@@ -348,7 +331,6 @@ const Dashboard = () => {
           </ul>
         </div>
 
-        {/* Sản phẩm sắp hết */}
         <div className="bg-white border border-[#d0d7de] rounded-xl shadow-sm overflow-hidden">
           <div className="bg-[#f6f8fa] px-4 py-3 border-b border-[#d0d7de] flex items-center justify-between">
             <h3 className="text-sm font-bold text-[#1f2328] flex items-center gap-2">
@@ -384,7 +366,6 @@ const Dashboard = () => {
           </ul>
         </div>
 
-        {/* Cảnh báo AI (Đánh giá Fake) */}
         <div className="bg-white border border-[#cf222e]/30 rounded-xl shadow-sm overflow-hidden flex flex-col items-center justify-center p-6 text-center">
           <div className="w-16 h-16 bg-[#ffebe9] rounded-full flex items-center justify-center mb-4">
             <AlertTriangle size={32} className="text-[#cf222e]" />

@@ -6,10 +6,8 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  // Ưu tiên kiểm tra token trong sessionStorage trước (nơi lưu token Admin khi đăng nhập)
   let token = sessionStorage.getItem("token");
 
-  // Nếu không có trong session (không phải admin), mới tìm ở localStorage
   if (!token) {
     token = localStorage.getItem("token");
   }
@@ -20,7 +18,6 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Tự động làm sạch dữ liệu nếu token hết hạn (401) HOẶC tài khoản bị khóa (403)
 api.interceptors.response.use(
   (res) => res,
   (err) => {
@@ -28,7 +25,7 @@ api.interceptors.response.use(
       localStorage.clear();
       sessionStorage.clear();
       if (!window.location.pathname.includes("/login"))
-        window.location.href = "/"; // Ép văng về trang chủ
+        window.location.href = "/";
     }
     return Promise.reject(err);
   },

@@ -8,32 +8,27 @@ import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
 import { useCart } from "../../context/CartContext";
 import { Loader2 } from "lucide-react";
-import { io } from "socket.io-client"; // MỚI IMPORT
+import { io } from "socket.io-client";
 
 const Home = () => {
   const [products, setProducts] = useState([]);
-  const [refreshKey, setRefreshKey] = useState(0); // MỚI: State an toàn để trigger API
+  const [refreshKey, setRefreshKey] = useState(0);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const { addToast } = useToast();
-  const { fetchCartCount } = useCart(); // MỚI: Lấy hàm cập nhật số lượng
-  const navigate = useNavigate(); // <-- THÊM DÒNG NÀY
+  const { fetchCartCount } = useCart();
+  const navigate = useNavigate();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Dời việc lấy URL lên trên để sử dụng ngay cho State
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const searchTerm = searchParams.get("search") || "";
   const categoryParam = searchParams.get("category_id") || "";
 
-  // CẬP NHẬT: Khởi tạo State trực tiếp bằng dữ liệu từ URL thay vì chuỗi rỗng ""
-  // Việc này chặn đứng hoàn toàn lỗi gọi sai API ở lần tải trang đầu tiên.
   const [selectedCategory, setSelectedCategory] = useState(categoryParam);
 
-  // CẬP NHẬT: Thay vì luôn xóa trắng (reset về All Categories), ta gán giá trị
-  // bằng với ID của danh mục đang có trên URL (nếu có)
   useEffect(() => {
     setSelectedCategory(categoryParam);
   }, [location.key, categoryParam]);
@@ -48,14 +43,13 @@ const Home = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, [selectedCategory, currentPage, searchTerm, refreshKey]); // MỚI: Thêm refreshKey
+  }, [selectedCategory, currentPage, searchTerm, refreshKey]);
 
-  // MỚI: Lắng nghe tín hiệu từ Admin để tự load lại danh sách sản phẩm
   useEffect(() => {
     const socket = io("http://localhost:5000");
 
     socket.on("product_list_updated", () => {
-      setRefreshKey((prev) => prev + 1); // An toàn cập nhật mà không làm loạn trạng thái filter hiện tại
+      setRefreshKey((prev) => prev + 1);
     });
 
     return () => socket.disconnect();
@@ -73,12 +67,10 @@ const Home = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      // Dùng selectedCategory làm nguồn duy nhất vì URL và Dropdown đã được đồng bộ
       const res = await api.get(
         `/products?search=${searchTerm}&category_id=${selectedCategory}&page=${currentPage}&per_page=8`,
       );
 
-      // Chỉ cập nhật state nếu kết quả trả về thành công
       if (res.data.status === "success") {
         setProducts(res.data.products || []);
         setTotalPages(res.data.total_pages || 1);
@@ -99,7 +91,7 @@ const Home = () => {
     try {
       await api.post("/cart", { product_id: productId, quantity: 1 });
       addToast("Product added to cart!", "success");
-      fetchCartCount(); // MỚI: Gọi lệnh cập nhật chấm đỏ trên Navbar
+      fetchCartCount();
     } catch (err) {
       addToast("Failed to add", "error");
     }
@@ -142,7 +134,6 @@ const Home = () => {
             value={selectedCategory}
             onChange={(e) => {
               const val = e.target.value;
-              // Thay đổi URL thay vì đổi State. URL đổi sẽ kéo theo Breadcrumbs thay đổi!
               if (val) {
                 navigate(`/?category_id=${val}`);
               } else {

@@ -9,14 +9,12 @@ export const CartProvider = ({ children }) => {
   const { isAuthenticated } = useAuth();
 
   const fetchCartCount = async () => {
-    // Nếu chưa đăng nhập thì mặc định là 0
     if (!isAuthenticated) {
       setCartCount(0);
       return;
     }
     try {
       const res = await api.get("/cart");
-      // Tính tổng số lượng (quantity) của tất cả các món trong giỏ
       const count = res.data.cart_items.reduce(
         (sum, item) => sum + item.quantity,
         0,
@@ -27,7 +25,6 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  // Tự động lấy số lượng khi người dùng đăng nhập thành công hoặc load lại trang
   useEffect(() => {
     fetchCartCount();
   }, [isAuthenticated]);

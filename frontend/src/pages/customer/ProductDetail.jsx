@@ -4,9 +4,9 @@ import Navbar from "../../components/layout/Navbar";
 import Button from "../../components/common/Button";
 import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
-import { useCart } from "../../context/CartContext"; // MỚI IMPORT
-import { io } from "socket.io-client"; // MỚI IMPORT
-import { useAuth } from "../../context/AuthContext"; // MỚI IMPORT
+import { useCart } from "../../context/CartContext";
+import { io } from "socket.io-client";
+import { useAuth } from "../../context/AuthContext";
 import {
   Loader2,
   Star,
@@ -20,18 +20,18 @@ import {
   Edit2,
   Trash2,
   X,
-  Check, // MỚI THÊM ICON
+  Check,
 } from "lucide-react";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
-import ConfirmDialog from "../../components/common/ConfirmDialog"; // MỚI IMPORT
+import ConfirmDialog from "../../components/common/ConfirmDialog";
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { addToast } = useToast();
-  const { fetchCartCount } = useCart(); // MỚI
-  const { user } = useAuth(); // MỚI LẤY THÔNG TIN USER
+  const { fetchCartCount } = useCart();
+  const { user } = useAuth();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -40,21 +40,17 @@ const ProductDetail = () => {
 
   const [reviews, setReviews] = useState([]);
 
-  // MỚI: State cho form viết đánh giá
   const [newReviewContent, setNewReviewContent] = useState("");
   const [newReviewRating, setNewReviewRating] = useState(5);
   const [submittingReview, setSubmittingReview] = useState(false);
-  // MỚI: State cho việc Edit In-line
   const [editingReviewId, setEditingReviewId] = useState(null);
   const [editContent, setEditContent] = useState("");
   const [editRating, setEditRating] = useState(5);
 
-  // MỚI: State cho hộp thoại xác nhận xóa
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [reviewToDelete, setReviewToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // MỚI: Tách hàm fetchReviews ra ngoài để có thể gọi lại sau khi đăng comment thành công
   const fetchReviews = async () => {
     try {
       const res = await api.get(`/reviews/product/${id}`);
@@ -67,20 +63,15 @@ const ProductDetail = () => {
   useEffect(() => {
     fetchReviews();
 
-    // MỚI: KẾT NỐI WEBSOCKET
     const socket = io("http://localhost:5000");
 
-    // Vừa vào trang là xin gia nhập "Phòng" của sản phẩm này
     socket.on("connect", () => {
       socket.emit("join", { room: `product_${id}` });
     });
 
-    // Lắng nghe sự kiện "new_review" từ Backend trả về
     socket.on("new_review", (newReview) => {
-      // 1. Chèn comment mới lên đầu danh sách
       setReviews((prev) => [newReview, ...prev]);
 
-      // 2. Tự động tính toán lại số lượng và Số sao trung bình
       setProduct((prevProduct) => {
         if (!prevProduct) return prevProduct;
         const newCount = prevProduct.review_count + 1;
@@ -94,7 +85,6 @@ const ProductDetail = () => {
       });
     });
 
-    // Lắng nghe người khác SỬA comment
     socket.on("review_updated", (data) => {
       setReviews((prev) =>
         prev.map((r) =>
@@ -103,31 +93,25 @@ const ProductDetail = () => {
             : r,
         ),
       );
-      // MỚI: Tự động tải lại thông tin Sản phẩm để cập nhật Số sao trung bình (avg_rating)
       api.get(`/products/${id}`).then((res) => setProduct(res.data.product));
     });
 
-    // Lắng nghe người khác XÓA comment
     socket.on("review_deleted", (data) => {
       setReviews((prev) => prev.filter((r) => r.review_id !== data.review_id));
-      // MỚI: Tự động tải lại thông tin Sản phẩm để giảm Số đếm đánh giá (review_count)
       api.get(`/products/${id}`).then((res) => setProduct(res.data.product));
     });
 
-    // MỚI: Lắng nghe Admin BỎ ẨN comment
     socket.on("review_unhidden", () => {
-      fetchReviews(); // Tải lại danh sách
+      fetchReviews();
       api.get(`/products/${id}`).then((res) => setProduct(res.data.product));
     });
 
-    // Rời phòng khi chuyển sang trang khác
     return () => {
       socket.emit("leave", { room: `product_${id}` });
       socket.disconnect();
     };
   }, [id]);
 
-  // MỚI: Hàm xử lý khi người dùng ấn Submit Review
   const handleSubmitReview = async () => {
     if (!localStorage.getItem("token") && !sessionStorage.getItem("token")) {
       addToast("Please sign in to write a review", "info");
@@ -147,9 +131,7 @@ const ProductDetail = () => {
       addToast("Review submitted successfully!", "success");
       setNewReviewContent("");
       setNewReviewRating(5);
-      // XÓA GỌI LẠI fetchReviews() ở đây, vì WebSocket sẽ tự động nhận data về và render cho bạn!
     } catch (err) {
-      // Backend sẽ trả về lỗi nếu chưa mua hàng hoặc đã review rồi
       addToast(
         err.response?.data?.message || "Failed to submit review",
         "error",
@@ -167,7 +149,6 @@ const ProductDetail = () => {
       });
       addToast("Review updated!", "success");
       setEditingReviewId(null);
-      // Không gọi fetchReviews vì Socket đã tự cập nhật!
     } catch (err) {
       addToast("Failed to update", "error");
     }
@@ -221,7 +202,7 @@ const ProductDetail = () => {
     try {
       await api.post("/cart", { product_id: product.product_id, quantity });
       addToast("Added to cart successfully!", "success");
-      fetchCartCount(); // MỚI: Gọi lệnh cập nhật chấm đỏ
+      fetchCartCount();
     } catch (err) {
       addToast("Error adding to cart", "error");
     } finally {
@@ -262,7 +243,6 @@ const ProductDetail = () => {
             </div>
 
             <div className="flex flex-col gap-8">
-              {/* Header Tổng quan Review từ DB thật */}
               <div className="flex items-center gap-4 border-b border-[#d0d7de] pb-4">
                 <h2 className="text-2xl font-bold text-[#1f2328]">Reviews</h2>
                 <div className="flex items-center gap-2 bg-[#f6f8fa] px-3 py-1 rounded-full border border-[#d0d7de]">
@@ -296,7 +276,6 @@ const ProductDetail = () => {
                 </div>
               </div>
 
-              {/* MỚI: FORM VIẾT ĐÁNH GIÁ */}
               <div className="bg-[#f6f8fa] p-5 rounded-lg border border-[#d0d7de] flex flex-col gap-4">
                 <h3 className="font-bold text-[#1f2328]">Write a Review</h3>
                 <div className="flex items-center gap-2">
@@ -334,7 +313,6 @@ const ProductDetail = () => {
                 </div>
               </div>
 
-              {/* DANH SÁCH BÌNH LUẬN TỪ DB */}
               {reviews.length === 0 ? (
                 <p className="text-[#6e7781] italic font-medium p-4 border border-dashed border-[#d0d7de] rounded-lg text-center bg-[#f6f8fa]">
                   No reviews yet. Be the first to review this product!
@@ -342,14 +320,13 @@ const ProductDetail = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {reviews.map((review) => {
-                    const isOwner = user?.username === review.username; // Xác định chủ sở hữu
+                    const isOwner = user?.username === review.username;
 
                     return (
                       <div
                         key={review.review_id}
                         className="flex flex-col gap-2 p-5 border border-[#d0d7de] rounded-lg bg-white shadow-sm hover:border-[#0969da] transition-colors relative group"
                       >
-                        {/* FORM CHỈNH SỬA */}
                         {editingReviewId === review.review_id ? (
                           <div className="flex flex-col gap-3">
                             <div className="flex text-[#0969da] cursor-pointer">
@@ -393,7 +370,6 @@ const ProductDetail = () => {
                           </div>
                         ) : (
                           <>
-                            {/* NÚT EDIT/DELETE ẨN HIỆN */}
                             {isOwner && (
                               <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 bg-white pl-2">
                                 <button
@@ -408,8 +384,8 @@ const ProductDetail = () => {
                                   <Edit2 size={14} />
                                 </button>
                                 <button
-                                  onClick={
-                                    () => handleDeleteClick(review.review_id) // SỬA THÀNH handleDeleteClick
+                                  onClick={() =>
+                                    handleDeleteClick(review.review_id)
                                   }
                                   className="text-[#6e7781] hover:text-[#cf222e]"
                                   title="Delete"
@@ -616,7 +592,6 @@ const ProductDetail = () => {
           </div>
         </div>
       </main>
-      {/* MỚI: Hộp thoại xác nhận xóa */}
       <ConfirmDialog
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}

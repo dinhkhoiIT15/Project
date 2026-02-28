@@ -11,33 +11,29 @@ import {
   EyeOff,
   Eye,
 } from "lucide-react";
-import Pagination from "../../components/common/Pagination"; // MỚI IMPORT
+import Pagination from "../../components/common/Pagination";
 
 const ManageReviews = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // States cho Bộ lọc
   const [filterProductId, setFilterProductId] = useState("");
   const [filterUsername, setFilterUsername] = useState("");
 
-  // MỚI: States cho phân trang
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   const { addToast } = useToast();
 
-  // States cho Xóa
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [reviewToDelete, setReviewToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchReviews();
-  }, [filterProductId, filterUsername, currentPage]); // MỚI: Thêm currentPage
+  }, [filterProductId, filterUsername, currentPage]);
 
   const fetchReviews = async () => {
-    // Kiểm tra xem có token Admin không trước khi gọi
     const token = sessionStorage.getItem("token");
     if (!token) {
       addToast("Admin session expired. Please login again.", "error");
@@ -50,13 +46,12 @@ const ManageReviews = () => {
         params: {
           product_id: filterProductId || undefined,
           username: filterUsername || undefined,
-          page: currentPage, // MỚI: Truyền trang hiện tại lên API
+          page: currentPage,
         },
       });
       setReviews(res.data.reviews || []);
-      setTotalPages(res.data.total_pages || 1); // MỚI: Nhận tổng số trang
+      setTotalPages(res.data.total_pages || 1);
     } catch (err) {
-      // Nếu lỗi trả về là Missing Authorization, báo lỗi đăng nhập
       if (
         err.response?.status === 401 ||
         err.response?.data?.msg?.includes("Authorization")
@@ -238,7 +233,6 @@ const ManageReviews = () => {
         </div>
       </div>
 
-      {/* MỚI: Thanh phân trang */}
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}

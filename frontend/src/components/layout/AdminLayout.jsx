@@ -8,23 +8,22 @@ import {
   LogOut,
   ShoppingBag,
   Truck,
-  Users, // MỚI THÊM ICON
+  Users,
 } from "lucide-react";
-import { useAuth } from "../../context/AuthContext"; // MỚI: Import useAuth
+import { useAuth } from "../../context/AuthContext";
 
 const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth(); // MỚI: Lấy hàm logout từ context
+  const { logout } = useAuth();
 
   const handleLogout = () => {
-    // Gọi hàm logout chuẩn từ Context thay vì xóa thủ công
     logout();
   };
 
   const navItems = [
     { path: "/admin", icon: <LayoutDashboard size={18} />, label: "Dashboard" },
-    { path: "/admin/users", icon: <Users size={18} />, label: "Users" }, // MỚI THÊM
+    { path: "/admin/users", icon: <Users size={18} />, label: "Users" },
     {
       path: "/admin/categories",
       icon: <Tags size={18} />,
@@ -41,7 +40,6 @@ const AdminLayout = () => {
 
   return (
     <div className="flex h-screen bg-white overflow-hidden font-sans">
-      {/* Sidebar bên trái chuẩn GitHub */}
       <aside className="w-64 bg-[#f6f8fa] border-r border-[#d0d7de] flex flex-col">
         <div className="p-6 border-b border-[#d0d7de] bg-white">
           <Link
@@ -95,7 +93,6 @@ const AdminLayout = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 overflow-y-auto bg-white p-10">
         <div className="max-w-6xl mx-auto">
           <Outlet />

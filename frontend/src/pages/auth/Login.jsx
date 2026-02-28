@@ -29,7 +29,6 @@ const Login = ({ onLoginSuccess, switchToRegister }) => {
 
   return (
     <div className="flex w-full flex-col animate-fade-in pb-4 px-2">
-      {/* Header section: Icon và Text nằm ngang */}
       <div className="flex flex-col items-center justify-center mb-6 mt-2">
         <div className="flex items-center justify-center gap-3 mb-2">
           <div className="bg-[#0969da]/10 p-2.5 rounded-full flex items-center justify-center">
@@ -42,14 +41,12 @@ const Login = ({ onLoginSuccess, switchToRegister }) => {
         </p>
       </div>
 
-      {/* Thông báo lỗi */}
       {errorMsg && (
         <div className="mb-4 p-3 bg-[#fff8f7] text-[#cf222e] rounded-md text-xs font-bold border border-[#ffdce0] text-center">
           {errorMsg}
         </div>
       )}
 
-      {/* Form nhập liệu */}
       <form onSubmit={handleSubmit} className="flex flex-col w-full">
         <Input
           label="Username"
@@ -83,7 +80,6 @@ const Login = ({ onLoginSuccess, switchToRegister }) => {
         </div>
       </form>
 
-      {/* Footer link */}
       <div className="flex flex-wrap items-center justify-center gap-1.5 mt-6 text-sm">
         <span className="text-[#1f2328] font-medium">
           Don't have an account?

@@ -5,36 +5,26 @@ from datetime import datetime, timedelta
 
 def get_dashboard_stats():
     try:
-        # 1. TOP KPI CARDS
-        # Tính tổng doanh thu (chỉ tính đơn đã hoàn thành)
         total_revenue = db.session.query(func.sum(Order.total_amount)).filter(Order.order_status == 'completed').scalar() or 0
         total_orders = Order.query.count()
         total_customers = User.query.filter_by(role='Customer').count()
         
-        # MỚI: Đếm chi tiết trạng thái khách hàng
         active_customers = User.query.filter_by(role='Customer', account_status='activated').count()
         locked_customers = User.query.filter_by(role='Customer', account_status='locked').count()
         
         total_products = Product.query.count()
 
-        # 2. ALERTS & ACTIONABLE LISTS
-        # Sản phẩm sắp hết hàng (< 10)
         low_stock_products = Product.query.filter(Product.stock_quantity < 10).limit(5).all()
         low_stock_list = [{"id": p.product_id, "name": p.name, "stock": p.stock_quantity} for p in low_stock_products]
 
-        # Đơn hàng mới nhất đang chờ duyệt
         recent_pending_orders = Order.query.filter_by(order_status='pending').order_by(Order.order_date.desc()).limit(5).all()
         pending_orders_list = [{"id": o.order_id, "amount": o.total_amount, "date": o.order_date.strftime('%Y-%m-%d')} for o in recent_pending_orders]
 
-        # Đếm số lượng Review bị AI đánh dấu là Fake
         fake_reviews_count = Review.query.filter_by(is_fake=True).count()
 
-        # 3. CHARTS DATA
-        # Biểu đồ tròn: Trạng thái đơn hàng
         status_counts = db.session.query(Order.order_status, func.count(Order.order_id)).group_by(Order.order_status).all()
         order_status_data = [{"name": status.capitalize(), "value": count} for status, count in status_counts]
 
-        # Biểu đồ đường: Doanh thu 7 ngày gần nhất
         seven_days_ago = datetime.utcnow() - timedelta(days=7)
         recent_completed_orders = Order.query.filter(Order.order_status == 'completed', Order.order_date >= seven_days_ago).all()
         
@@ -55,8 +45,8 @@ def get_dashboard_stats():
                 "revenue": total_revenue,
                 "orders": total_orders,
                 "customers": total_customers,
-                "active_customers": active_customers, # MỚI
-                "locked_customers": locked_customers, # MỚI
+                "active_customers": active_customers, 
+                "locked_customers": locked_customers, 
                 "products": total_products
             },
             "alerts": {

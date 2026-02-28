@@ -1,5 +1,4 @@
 from flask import request, jsonify
-# MỚI: Bổ sung import Category để query tên danh mục
 from app.models.models import db, Cart, CartItem, Product, Category
 from flask_jwt_extended import get_jwt_identity
 
@@ -16,7 +15,6 @@ def add_to_cart():
     if not product:
         return jsonify({"message": "Product not found"}), 404
         
-    # KIỂM TRA: Số lượng yêu cầu có vượt quá tồn kho không?
     if quantity > product.stock_quantity:
         return jsonify({"message": f"Only {product.stock_quantity} items left in stock"}), 400
         
@@ -29,7 +27,6 @@ def add_to_cart():
     cart_item = CartItem.query.filter_by(cart_id=cart.cart_id, product_id=product_id).first()
     
     if cart_item:
-        # KIỂM TRA: Tổng số lượng sau khi cộng thêm có vượt quá tồn kho không?
         if (cart_item.quantity + quantity) > product.stock_quantity:
             return jsonify({"message": f"Cannot add more. You already have {cart_item.quantity} in cart and stock is {product.stock_quantity}"}), 400
         cart_item.quantity += quantity
@@ -58,7 +55,6 @@ def get_cart():
     for item in cart_items:
         product = Product.query.get(item.product_id)
         if product:
-            # MỚI: Truy vấn Category để lấy tên danh mục hiển thị cho Giỏ hàng
             category = Category.query.get(product.category_id) if product.category_id else None
             category_name = category.name if category else "Uncategorized"
             
@@ -70,10 +66,10 @@ def get_cart():
                 "product_name": product.name,
                 "price": product.price,
                 "quantity": item.quantity,
-                "stock_quantity": product.stock_quantity, # Trả về stock để UI giới hạn nút "+"
+                "stock_quantity": product.stock_quantity, 
                 "item_total": item_total,
                 "image_url": product.image_url,
-                "category_name": category_name # MỚI: Trả về category_name cho Frontend
+                "category_name": category_name 
             })
             
     return jsonify({"cart_items": result, "total_price": total_price, "status": "success"}), 200
@@ -87,7 +83,6 @@ def update_cart_item(item_id):
         return jsonify({"message": "Item not found"}), 404
         
     product = Product.query.get(item.product_id)
-    # KIỂM TRA: Số lượng cập nhật có vượt quá tồn kho không?
     if new_quantity > product.stock_quantity:
         return jsonify({"message": f"Only {product.stock_quantity} items available"}), 400
         
@@ -100,7 +95,6 @@ def update_cart_item(item_id):
     return jsonify({"message": "Quantity updated"}), 200
 
 def remove_from_cart(item_id):
-    """Xóa hoàn toàn một sản phẩm khỏi giỏ hàng"""
     item = CartItem.query.get(item_id)
     if not item:
         return jsonify({"message": "Item not found"}), 404

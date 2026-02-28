@@ -11,21 +11,15 @@ from app.utils.decorators import admin_required
 
 order_bp = Blueprint('order_bp', __name__)
 
-# --- ROUTES CHO CUSTOMER ---
 order_bp.route('/api/orders/checkout', methods=['POST'])(jwt_required()(checkout))
 order_bp.route('/api/orders/my-orders', methods=['GET'])(jwt_required()(get_user_orders))
 
-# MỚI: Import thêm clear_all_notifications
 from app.controllers.order_controller import get_my_notifications, mark_notification_read, clear_all_notifications
 
-# --- ROUTES CHO ADMIN ---
 order_bp.route('/api/orders/all', methods=['GET'])(admin_required()(get_all_orders))
 order_bp.route('/api/orders/<int:order_id>/status', methods=['PUT'])(admin_required()(update_order_status))
-# MỚI: Route lấy chi tiết 1 đơn hàng cụ thể
 order_bp.route('/api/orders/<int:order_id>', methods=['GET'])(jwt_required()(get_order_by_id))
 
-# --- MỚI: ROUTES CHO THÔNG BÁO ---
 order_bp.route('/api/orders/notifications', methods=['GET'])(jwt_required()(get_my_notifications))
 order_bp.route('/api/orders/notifications/<int:notif_id>/read', methods=['PUT'])(jwt_required()(mark_notification_read))
-# MỚI: Route xóa toàn bộ thông báo
 order_bp.route('/api/orders/notifications/clear', methods=['DELETE'])(jwt_required()(clear_all_notifications))

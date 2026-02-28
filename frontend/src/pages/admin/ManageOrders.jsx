@@ -4,26 +4,25 @@ import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
 import { Truck, Clock, User, DollarSign } from "lucide-react";
 import { io } from "socket.io-client";
-import Pagination from "../../components/common/Pagination"; // MỚI IMPORT
+import Pagination from "../../components/common/Pagination";
 
 const ManageOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // MỚI: State cho phân trang
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [refreshKey, setRefreshKey] = useState(0); // MỚI: State an toàn để trigger gọi lại API
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const { addToast } = useToast();
 
   const fetchAllOrders = async () => {
     try {
       const res = await api.get("/orders/all", {
-        params: { page: currentPage }, // MỚI: Truyền số trang
+        params: { page: currentPage },
       });
       setOrders(res.data.orders);
-      setTotalPages(res.data.total_pages || 1); // MỚI: Lưu tổng số trang
+      setTotalPages(res.data.total_pages || 1);
     } catch (err) {
       addToast("Failed to fetch orders", "error");
     } finally {
@@ -31,12 +30,10 @@ const ManageOrders = () => {
     }
   };
 
-  // useEffect 1: Chuyên xử lý việc gọi API khi đổi trang hoặc có refreshKey mới
   useEffect(() => {
     fetchAllOrders();
   }, [currentPage, refreshKey]);
 
-  // useEffect 2: Chuyên xử lý Socket (Chỉ chạy 1 lần duy nhất khi mở trang)
   useEffect(() => {
     const socket = io("http://localhost:5000");
 
@@ -56,7 +53,7 @@ const ManageOrders = () => {
 
     socket.on("new_order_placed", () => {
       addToast("🛎️ New order received! Updating list...", "info");
-      setRefreshKey((prev) => prev + 1); // An toàn: Gọi fetchAllOrders gián tiếp thông qua refreshKey
+      setRefreshKey((prev) => prev + 1);
     });
 
     return () => socket.disconnect();
@@ -149,7 +146,6 @@ const ManageOrders = () => {
         </table>
       </div>
 
-      {/* MỚI: Component Phân trang */}
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}

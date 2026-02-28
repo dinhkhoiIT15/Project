@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/layout/Navbar";
-import { io } from "socket.io-client"; // MỚI IMPORT
+import { io } from "socket.io-client";
 import api from "../../services/api";
 import { ClipboardList, Clock, Package, Star } from "lucide-react";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
@@ -22,7 +22,6 @@ const MyOrders = () => {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      // API này bây giờ sẽ trả về cả 'items' bên trong mỗi đơn hàng
       const res = await api.get(
         `/orders/my-orders?page=${currentPage}&per_page=5`,
       );
@@ -35,7 +34,6 @@ const MyOrders = () => {
     }
   };
 
-  // MỚI: Lắng nghe trạng thái cập nhật bằng WebSocket
   useEffect(() => {
     const socket = io("http://localhost:5000");
 
@@ -102,7 +100,6 @@ const MyOrders = () => {
                   key={order.order_id}
                   className="flex w-full flex-col items-start rounded-xl border border-solid border-[#d0d7de] bg-white shadow-sm hover:border-[#0969da] transition-all duration-300 overflow-hidden"
                 >
-                  {/* Header/Balance Section */}
                   <div className="flex w-full flex-col items-start gap-1 px-6 py-5 bg-[#f6f8fa] border-b border-[#d0d7de]">
                     <div className="flex w-full items-center justify-between gap-2">
                       <span className="text-xl font-black text-[#1f2328]">
@@ -120,7 +117,6 @@ const MyOrders = () => {
                     </span>
                   </div>
 
-                  {/* Body/Items Preview Section */}
                   <div className="flex w-full grow shrink-0 basis-0 flex-col items-start gap-6 px-6 py-5">
                     <div className="flex w-full min-w-[224px] flex-col items-start gap-4">
                       {order.items &&
@@ -144,7 +140,6 @@ const MyOrders = () => {
                                 </span>
                               </div>
                             </div>
-                            {/* Đường kẻ chia cách (trừ item cuối cùng) */}
                             {index < order.items.length - 1 && (
                               <div className="flex h-px w-full flex-none flex-col items-center gap-2 bg-[#eff1f3]" />
                             )}
@@ -152,7 +147,6 @@ const MyOrders = () => {
                         ))}
                     </div>
 
-                    {/* Nút bấm xem chi tiết */}
                     <button
                       className="h-10 w-full flex-none rounded-md bg-[#f6f8fa] border border-[#d0d7de] text-sm font-bold text-[#1f2328] hover:bg-[#eff1f3] hover:text-[#0969da] transition-colors"
                       onClick={() => navigate(`/order/${order.order_id}`)}

@@ -52,7 +52,6 @@ const Register = ({ switchToLogin }) => {
 
   return (
     <div className="flex w-full flex-col animate-fade-in pb-4 px-2">
-      {/* Header section: Icon và Text nằm ngang để tiết kiệm diện tích */}
       <div className="flex items-center justify-center gap-3 mb-6 mt-2">
         <div className="bg-[#1a7f37]/10 p-2.5 rounded-full flex items-center justify-center">
           <UserPlus size={24} className="text-[#1a7f37]" />
@@ -60,7 +59,6 @@ const Register = ({ switchToLogin }) => {
         <h2 className="text-2xl font-black text-[#1f2328]">Create account</h2>
       </div>
 
-      {/* Thông báo lỗi/thành công */}
       {errorMsg && (
         <div className="mb-4 p-3 bg-[#fff8f7] text-[#cf222e] rounded-md text-xs font-bold border border-[#ffdce0] text-center">
           {errorMsg}
@@ -72,7 +70,6 @@ const Register = ({ switchToLogin }) => {
         </div>
       )}
 
-      {/* Form nhập liệu: Bỏ class gap-2 vì Component Input đã có sẵn margin-bottom */}
       <form onSubmit={handleSubmit} className="flex flex-col w-full">
         <Input
           label="Username"
@@ -126,7 +123,6 @@ const Register = ({ switchToLogin }) => {
         </div>
       </form>
 
-      {/* Footer link */}
       <div className="flex flex-wrap items-center justify-center gap-1.5 mt-6 text-sm">
         <span className="text-[#1f2328] font-medium">Have an account?</span>
         <button

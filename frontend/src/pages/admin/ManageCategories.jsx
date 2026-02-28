@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
-import ConfirmDialog from "../../components/common/ConfirmDialog"; // MỚI
+import ConfirmDialog from "../../components/common/ConfirmDialog";
 import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
 import { Tags, PlusCircle, List, Edit, Trash2, X } from "lucide-react";
@@ -13,7 +13,6 @@ const ManageCategories = () => {
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(true);
 
-  // State cho Confirm Dialog
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState(null);
 
@@ -40,7 +39,6 @@ const ManageCategories = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Mở Dialog thay vì gọi window.confirm
   const initiateDelete = (id) => {
     setCategoryToDelete(id);
     setIsConfirmOpen(true);

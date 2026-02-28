@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../../components/layout/Navbar";
 import api from "../../services/api";
-// MỚI: Thêm các Icon và useToast
 import {
   MessageSquare,
   Star,
@@ -14,19 +13,17 @@ import {
 } from "lucide-react";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
 import { useToast } from "../../context/ToastContext";
-import ConfirmDialog from "../../components/common/ConfirmDialog"; // MỚI IMPORT
+import ConfirmDialog from "../../components/common/ConfirmDialog";
 
 const MyReviews = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const { addToast } = useToast();
 
-  // MỚI: Các State dùng cho việc chỉnh sửa
   const [editingId, setEditingId] = useState(null);
   const [editContent, setEditContent] = useState("");
   const [editRating, setEditRating] = useState(5);
 
-  // MỚI: Các State dùng cho hộp thoại xác nhận xóa
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [reviewToDelete, setReviewToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -46,7 +43,6 @@ const MyReviews = () => {
     }
   };
 
-  // MỚI: Xử lý lưu chỉnh sửa
   const handleUpdateReview = async (reviewId) => {
     try {
       await api.put(`/reviews/${reviewId}`, {
@@ -55,19 +51,17 @@ const MyReviews = () => {
       });
       addToast("Review updated successfully", "success");
       setEditingId(null);
-      fetchMyReviews(); // Load lại danh sách
+      fetchMyReviews();
     } catch (err) {
       addToast("Failed to update review", "error");
     }
   };
 
-  // MỚI: Xử lý khi bấm nút Thùng rác (Mở Dialog)
   const handleDeleteClick = (reviewId) => {
     setReviewToDelete(reviewId);
     setIsDeleteDialogOpen(true);
   };
 
-  // MỚI: Xử lý khi bấm nút "Delete" TRONG Dialog
   const confirmDeleteReview = async () => {
     if (!reviewToDelete) return;
     setIsDeleting(true);
@@ -141,7 +135,6 @@ const MyReviews = () => {
                   </div>
                 </div>
 
-                {/* MỚI: KHU VỰC HIỂN THỊ HOẶC CHỈNH SỬA */}
                 {editingId === review.review_id ? (
                   <div className="flex flex-col gap-3 bg-[#f6f8fa] p-4 rounded-lg border border-[#d0d7de]">
                     <div className="flex text-[#0969da] cursor-pointer">
@@ -179,7 +172,6 @@ const MyReviews = () => {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2 relative group">
-                    {/* Cụm Nút Edit / Delete ẩn hiện khi Hover */}
                     <div className="absolute -top-14 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
                       <button
                         onClick={() => {
@@ -193,7 +185,7 @@ const MyReviews = () => {
                         <Edit2 size={14} />
                       </button>
                       <button
-                        onClick={() => handleDeleteClick(review.review_id)} // MỚI: Đổi thành handleDeleteClick
+                        onClick={() => handleDeleteClick(review.review_id)}
                         className="p-1.5 text-[#6e7781] hover:text-[#cf222e] bg-white border border-[#d0d7de] rounded shadow-sm transition-colors"
                         title="Delete Review"
                       >
@@ -228,7 +220,6 @@ const MyReviews = () => {
         )}
       </main>
 
-      {/* MỚI: Hộp thoại xác nhận xóa */}
       <ConfirmDialog
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}

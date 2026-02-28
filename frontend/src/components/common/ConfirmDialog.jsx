@@ -16,13 +16,11 @@ const ConfirmDialog = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in">
-      {/* Overlay */}
       <div
         className="absolute inset-0 bg-[#00000099] backdrop-blur-[2px]"
         onClick={onClose}
       />
 
-      {/* Dialog Content */}
       <div className="relative bg-white w-full max-w-md rounded-lg border border-[#d0d7de] shadow-2xl overflow-hidden animate-slide-up">
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#d0d7de] bg-[#f6f8fa]">
           <h3 className="text-sm font-bold text-[#1f2328] flex items-center gap-2">

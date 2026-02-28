@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "../../components/layout/Navbar";
-import { io } from "socket.io-client"; // MỚI IMPORT
+import { io } from "socket.io-client";
 import api from "../../services/api";
 import { Clock, MapPin, CreditCard, Package, ArrowLeft } from "lucide-react";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
@@ -26,7 +26,6 @@ const OrderDetail = () => {
     fetchOrderDetail();
   }, [id]);
 
-  // MỚI: Lắng nghe Real-time cho riêng đơn hàng này
   useEffect(() => {
     let isMounted = true;
     const socket = io("http://localhost:5000");
@@ -35,7 +34,6 @@ const OrderDetail = () => {
       if (!isMounted) return;
 
       setOrder((prevOrder) => {
-        // Ép cả 2 ID về kiểu Chuỗi (String) để so sánh an toàn tuyệt đối
         if (prevOrder && String(prevOrder.order_id) === String(data.order_id)) {
           return {
             ...prevOrder,
@@ -43,7 +41,7 @@ const OrderDetail = () => {
             payment_status: data.payment_status,
           };
         }
-        return prevOrder; // Giữ nguyên trạng thái nếu không khớp ID
+        return prevOrder;
       });
     });
 
@@ -51,7 +49,7 @@ const OrderDetail = () => {
       isMounted = false;
       if (socket) socket.disconnect();
     };
-  }, [id]); // Thêm biến id vào đây để hook luôn lấy đúng mã đơn hàng trên URL
+  }, [id]);
 
   if (loading)
     return (

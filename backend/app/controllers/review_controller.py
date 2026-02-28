@@ -14,7 +14,6 @@ def predict_fake_review(content):
     return False 
 
 def add_review():
-    """Customer thêm review. CHỈ CHO PHÉP nếu đã mua hàng thành công."""
     data = request.get_json()
     user_id = get_jwt_identity()
     
@@ -62,18 +61,17 @@ def add_review():
         }
         
         socketio.emit('new_review', review_data, to=f'product_{product_id}')
-        socketio.emit('review_list_updated') # MỚI: Báo cho Dashboard
+        socketio.emit('review_list_updated') 
         return jsonify({"message": "Review added successfully", "status": "success"}), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({"message": "Server error"}), 500
 
 def get_product_reviews(product_id):
-    """Lấy danh sách review của 1 sản phẩm cụ thể (Chỉ lấy bài không bị ẩn)"""
     reviews = db.session.query(Review, User.username).join(User).filter(
         Review.product_id == product_id,
         Review.is_fake == False,
-        Review.is_hidden == False # MỚI: Bỏ qua comment bị ẩn
+        Review.is_hidden == False
     ).order_by(Review.created_at.desc()).all()
     
     result = []
@@ -88,7 +86,6 @@ def get_product_reviews(product_id):
     return jsonify({"reviews": result, "status": "success"}), 200
 
 def get_user_reviews():
-    """Lấy danh sách đánh giá của chính user đang đăng nhập"""
     user_id = get_jwt_identity()
     reviews = db.session.query(Review, Product).join(Product, Review.product_id == Product.product_id).filter(Review.user_id == user_id).order_by(Review.created_at.desc()).all()
     
@@ -107,7 +104,6 @@ def get_user_reviews():
     return jsonify({"reviews": result, "status": "success"}), 200
 
 def get_fake_reviews():
-    """Admin lấy danh sách các đánh giá bị AI đánh dấu là Fake"""
     reviews = db.session.query(Review, User).join(User, Review.user_id == User.user_id).filter(Review.is_fake == True).order_by(Review.created_at.desc()).all()
     
     result = []
@@ -125,10 +121,9 @@ def get_fake_reviews():
     return jsonify({"fake_reviews": result, "status": "success"}), 200
 
 def admin_get_all_reviews():
-    """Admin lấy toàn bộ đánh giá (Phân trang 10 items/trang)"""
     product_id = request.args.get('product_id')
     username = request.args.get('username') 
-    page = request.args.get('page', 1, type=int) # MỚI: Lấy số trang
+    page = request.args.get('page', 1, type=int) 
     
     query = db.session.query(Review, User).join(User, Review.user_id == User.user_id)
     
@@ -137,7 +132,6 @@ def admin_get_all_reviews():
     if username:
         query = query.filter(User.username.ilike(f"%{username}%"))
         
-    # MỚI: Phân trang giới hạn 10 items
     pagination = query.order_by(Review.created_at.desc()).paginate(page=page, per_page=10, error_out=False)
     reviews = pagination.items
     
@@ -161,52 +155,23 @@ def admin_get_all_reviews():
         "current_page": pagination.page,
         "status": "success"
     }), 200
-    """Admin lấy toàn bộ đánh giá, có thể lọc theo product_id và username"""
-    product_id = request.args.get('product_id')
-    username = request.args.get('username') # MỚI: Lọc theo tên người dùng
-    query = db.session.query(Review, User).join(User, Review.user_id == User.user_id)
-    
-    if product_id and product_id.isdigit():
-        query = query.filter(Review.product_id == int(product_id))
-    if username:
-        query = query.filter(User.username.ilike(f"%{username}%"))
-        
-    reviews = query.order_by(Review.created_at.desc()).all()
-    
-    result = []
-    for r, u in reviews:
-        result.append({
-            "review_id": r.review_id,
-            "product_id": r.product_id,
-            "user_id": u.user_id,
-            "username": u.username,
-            "content": r.content,
-            "rating": r.rating,
-            "is_fake": r.is_fake,
-            "is_hidden": r.is_hidden, # MỚI
-            "created_at": r.created_at.strftime('%Y-%m-%d') if r.created_at else "Unknown"
-        })
-    return jsonify({"reviews": result, "status": "success"}), 200
 
 def delete_review(review_id):
-    """Admin xóa review vi phạm và gửi thông báo cho user"""
     review = Review.query.get(review_id)
     if not review: return jsonify({"message": "Review not found"}), 404
     try:
         product_id = review.product_id
         user_id = review.user_id
         
-        # MỚI: Tạo thông báo gửi cho User
         notif = Notification(
             user_id=user_id,
-            order_id=0, # Dùng 0 để ám chỉ đây là thông báo hệ thống, ko click chuyển trang
+            order_id=0, 
             message=f"Your review on Product #{product_id} was deleted by Admin due to policy violation."
         )
         db.session.add(notif)
         db.session.delete(review)
         db.session.commit()
         
-        # Bắn Socket
         socketio.emit('new_notification', {
             "id": notif.id,
             "order_id": notif.order_id,
@@ -216,13 +181,12 @@ def delete_review(review_id):
         }, to=f'user_{user_id}')
         
         socketio.emit('review_deleted', {"review_id": review_id}, to=f'product_{product_id}')
-        socketio.emit('review_list_updated') # MỚI: Báo cho Dashboard
+        socketio.emit('review_list_updated') 
         return jsonify({"message": "Review deleted successfully"}), 200
     except Exception:
         db.session.rollback()
         return jsonify({"message": "Delete failed"}), 500
 
-# MỚI: Hàm ẩn bài viết
 def toggle_hide_review(review_id):
     review = Review.query.get(review_id)
     if not review: return jsonify({"message": "Not found"}), 404
@@ -230,50 +194,43 @@ def toggle_hide_review(review_id):
     review.is_hidden = not review.is_hidden
     db.session.commit()
     
-    # Bắn socket để Front-end ẩn/hiện
     if review.is_hidden:
         socketio.emit('review_deleted', {"review_id": review_id}, to=f'product_{review.product_id}')
     else:
-        socketio.emit('review_unhidden', {}, to=f'product_{review.product_id}') # Báo reset
+        socketio.emit('review_unhidden', {}, to=f'product_{review.product_id}') 
 
-    socketio.emit('review_list_updated') # MỚI: Báo cho Dashboard 
+    socketio.emit('review_list_updated') 
     return jsonify({"message": "Status updated", "is_hidden": review.is_hidden}), 200
 
-# ================= MỚI: API CHO CUSTOMER SỬA/XÓA ĐÁNH GIÁ =================
 def update_review(review_id):
-    """Customer sửa đánh giá của chính mình"""
     user_id = get_jwt_identity()
     data = request.get_json()
     review = Review.query.get(review_id)
     
-    # Kiểm tra quyền: Chỉ chủ sở hữu mới được sửa
     if not review or str(review.user_id) != str(user_id):
         return jsonify({"message": "Not authorized to edit this review"}), 403
         
     if 'content' in data:
         review.content = data['content']
-        review.is_fake = predict_fake_review(data['content']) # Kiểm tra lại AI
+        review.is_fake = predict_fake_review(data['content']) 
     if 'rating' in data:
         review.rating = data['rating']
         
     db.session.commit()
     
-    # Phát sóng Real-time cho mọi người thấy nội dung mới
     socketio.emit('review_updated', {
         "review_id": review.review_id,
         "content": review.content,
         "rating": review.rating
     }, to=f'product_{review.product_id}')
-    socketio.emit('review_list_updated') # MỚI: Báo cho Dashboard
+    socketio.emit('review_list_updated') 
     
     return jsonify({"message": "Review updated successfully", "status": "success"}), 200
 
 def user_delete_review(review_id):
-    """Customer xóa đánh giá của chính mình"""
     user_id = get_jwt_identity()
     review = Review.query.get(review_id)
     
-    # Kiểm tra quyền
     if not review or str(review.user_id) != str(user_id):
         return jsonify({"message": "Not authorized to delete this review"}), 403
         
@@ -281,10 +238,9 @@ def user_delete_review(review_id):
     db.session.delete(review)
     db.session.commit()
     
-    # Phát sóng Real-time để mọi người xóa comment này khỏi màn hình
     socketio.emit('review_deleted', {
         "review_id": review_id
     }, to=f'product_{product_id}')
-    socketio.emit('review_list_updated') # MỚI: Báo cho Dashboard
+    socketio.emit('review_list_updated')
     
     return jsonify({"message": "Review deleted successfully", "status": "success"}), 200
