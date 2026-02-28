@@ -16,9 +16,10 @@ import {
 import Login from "../../pages/auth/Login";
 import Register from "../../pages/auth/Register";
 import { useAuth } from "../../context/AuthContext";
-import { useCart } from "../../context/CartContext"; // MỚI IMPORT
+import { useCart } from "../../context/CartContext";
+import { useToast } from "../../context/ToastContext"; // MỚI IMPORT
 import api from "../../services/api";
-import { io } from "socket.io-client"; // MỚI IMPORT
+import { io } from "socket.io-client";
 
 const NavItem = ({ children, onClick, className = "" }) => (
   <div
@@ -39,6 +40,7 @@ const Navbar = () => {
 
   const { user, isAuthenticated, logout } = useAuth();
   const { cartCount, fetchCartCount } = useCart(); // MỚI: Thêm fetchCartCount
+  const { addToast } = useToast(); // MỚI: Khai báo addToast
 
   // ----- STATES CHO LIVE SEARCH -----
   const [searchTerm, setSearchTerm] = useState("");
@@ -82,6 +84,12 @@ const Navbar = () => {
           // MỚI: Lắng nghe sự kiện giỏ hàng được hoàn trả
           socketInstance.on("cart_updated", () => {
             fetchCartCount();
+          });
+
+          // MỚI NHẤT: Lắng nghe sự kiện bị khóa tài khoản (ép văng ra ngoài)
+          socketInstance.on("force_logout", (data) => {
+            addToast(data.message || "Your account has been locked.", "error");
+            logout();
           });
         })
         .catch((err) => console.error(err));

@@ -23,7 +23,8 @@ import ProductDetail from "./pages/customer/ProductDetail";
 import Footer from "./components/layout/Footer";
 import MyReviews from "./pages/customer/MyReviews";
 import ManageReviews from "./pages/admin/ManageReviews";
-import OrderDetail from "./pages/customer/OrderDetail"; // MỚI IMPORT
+import OrderDetail from "./pages/customer/OrderDetail";
+import ManageUsers from "./pages/admin/ManageUsers"; // MỚI IMPORT
 
 const AppContent = () => {
   const location = useLocation();
@@ -110,8 +111,9 @@ const AppContent = () => {
             <Route path="categories" element={<ManageCategories />} />
             <Route path="products" element={<ManageProducts />} />
             <Route path="orders" element={<ManageOrders />} />
-            {/* MỚI: Route quản lý đánh giá cho Admin */}
             <Route path="reviews" element={<ManageReviews />} />
+            {/* MỚI: Route quản lý User cho Admin */}
+            <Route path="users" element={<ManageUsers />} />
           </Route>
         </Routes>
       </div>

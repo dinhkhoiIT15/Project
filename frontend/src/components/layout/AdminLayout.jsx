@@ -8,6 +8,7 @@ import {
   LogOut,
   ShoppingBag,
   Truck,
+  Users, // MỚI THÊM ICON
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext"; // MỚI: Import useAuth
 
@@ -23,6 +24,7 @@ const AdminLayout = () => {
 
   const navItems = [
     { path: "/admin", icon: <LayoutDashboard size={18} />, label: "Dashboard" },
+    { path: "/admin/users", icon: <Users size={18} />, label: "Users" }, // MỚI THÊM
     {
       path: "/admin/categories",
       icon: <Tags size={18} />,

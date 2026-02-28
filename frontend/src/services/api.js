@@ -20,15 +20,15 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Tự động làm sạch dữ liệu nếu token hết hạn (401)
+// Tự động làm sạch dữ liệu nếu token hết hạn (401) HOẶC tài khoản bị khóa (403)
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    if (err.response?.status === 401 || err.response?.status === 403) {
       localStorage.clear();
       sessionStorage.clear();
       if (!window.location.pathname.includes("/login"))
-        window.location.href = "/";
+        window.location.href = "/"; // Ép văng về trang chủ
     }
     return Promise.reject(err);
   },
