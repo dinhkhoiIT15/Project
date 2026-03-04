@@ -4,12 +4,14 @@ import Button from "../../components/common/Button";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { LogIn } from "lucide-react";
+import { useNavigate } from "react-router-dom"; // MỚI: Import useNavigate
 
 const Login = ({ onLoginSuccess, switchToRegister }) => {
   const [formData, setFormData] = useState({ username: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const { login } = useAuth();
+  const navigate = useNavigate(); // MỚI: Khởi tạo navigate
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,7 +21,13 @@ const Login = ({ onLoginSuccess, switchToRegister }) => {
       const { user, access_token } = response.data;
 
       login(user, access_token);
-      if (onLoginSuccess) onLoginSuccess(user.role);
+
+      // MỚI: Kiểm tra Role, nếu là Admin thì ép chuyển hướng vào Dashboard
+      if (user.role === "Admin") {
+        navigate("/admin");
+      } else if (onLoginSuccess) {
+        onLoginSuccess(user.role);
+      }
     } catch (error) {
       setErrorMsg(error.response?.data?.message || "Login failed.");
     } finally {
