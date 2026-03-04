@@ -10,12 +10,15 @@ import {
   Star,
   EyeOff,
   Eye,
+  CheckCircle, // MỚI: Thêm icon cho tab Real
 } from "lucide-react";
+import { io } from "socket.io-client"; // MỚI: Import socket
 import Pagination from "../../components/common/Pagination";
 
 const ManageReviews = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("real"); // MỚI: State quản lý tab hiện tại
 
   const [filterProductId, setFilterProductId] = useState("");
   const [filterUsername, setFilterUsername] = useState("");
@@ -35,7 +38,16 @@ const ManageReviews = () => {
 
   useEffect(() => {
     fetchReviews();
-  }, [filterProductId, filterUsername, currentPage]);
+  }, [filterProductId, filterUsername, currentPage, activeTab]); // MỚI: Thêm activeTab vào dependencies
+
+  // MỚI: Lắng nghe socket để auto reload danh sách
+  useEffect(() => {
+    const socket = io("http://localhost:5000"); // Đổi port nếu backend của bạn chạy port khác
+    socket.on("review_list_updated", () => {
+      fetchReviews();
+    });
+    return () => socket.disconnect();
+  }, [currentPage, activeTab, filterProductId, filterUsername]);
 
   const fetchReviews = async () => {
     const token = sessionStorage.getItem("token");
@@ -51,6 +63,7 @@ const ManageReviews = () => {
           product_id: filterProductId || undefined,
           username: filterUsername || undefined,
           page: currentPage,
+          tab: activeTab, // MỚI: Truyền tab xuống backend
         },
       });
       setReviews(res.data.reviews || []);
@@ -160,6 +173,44 @@ const ManageReviews = () => {
             />
           </div>
         </div>
+      </div>
+
+      {/* MỚI: KHỐI CHUYỂN TAB REAL / FAKE REVIEWS */}
+      <div className="flex gap-4 mb-6 border-b border-[#d0d7de]">
+        <button
+          onClick={() => {
+            setActiveTab("real");
+            setCurrentPage(1);
+          }}
+          className={`flex items-center gap-2 pb-3 px-2 text-sm font-bold transition-colors ${
+            activeTab === "real"
+              ? "border-b-2 border-[#0969da] text-[#1f2328]"
+              : "text-[#6e7781] hover:text-[#1f2328]"
+          }`}
+        >
+          <CheckCircle
+            size={18}
+            className={activeTab === "real" ? "text-[#1a7f37]" : ""}
+          />
+          Real Reviews
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab("fake");
+            setCurrentPage(1);
+          }}
+          className={`flex items-center gap-2 pb-3 px-2 text-sm font-bold transition-colors ${
+            activeTab === "fake"
+              ? "border-b-2 border-[#cf222e] text-[#1f2328]"
+              : "text-[#6e7781] hover:text-[#1f2328]"
+          }`}
+        >
+          <AlertTriangle
+            size={18}
+            className={activeTab === "fake" ? "text-[#cf222e]" : ""}
+          />
+          AI Fake Reviews Alerts
+        </button>
       </div>
 
       {/* KHỐI UI TEST AI TẠM THỜI */}
@@ -273,29 +324,44 @@ const ManageReviews = () => {
                     </td>
                     <td className="p-4 flex flex-col gap-1.5">
                       {review.is_fake && (
-                        <span className="flex items-center gap-1 text-[10px] font-black text-[#cf222e] bg-[#ffebe9] border border-[#cf222e]/20 px-2 py-1 rounded-md w-fit uppercase tracking-wider shadow-sm">
-                          <AlertTriangle size={12} strokeWidth={2.5} /> AI
-                          Flagged
+                        <span
+                          className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md w-fit shadow-sm border ${
+                            review.confidence_score >= 60
+                              ? "bg-[#ffebe9] text-[#cf222e] border-[#cf222e]/20" // Nguy hiểm (Đỏ)
+                              : "bg-[#fff8c5] text-[#9a6700] border-[#9a6700]/20" // Nghi ngờ (Vàng)
+                          }`}
+                        >
+                          <AlertTriangle size={12} strokeWidth={2.5} />
+                          {review.confidence_score >= 60
+                            ? "AI Blocked"
+                            : "AI Flagged"}{" "}
+                          ({review.confidence_score}%)
                         </span>
                       )}
+
                       {review.is_hidden && (
-                        <span className="flex items-center gap-1 text-[10px] font-black text-[#9a6700] bg-[#fff8c5] border border-[#9a6700]/20 px-2 py-1 rounded-md w-fit uppercase tracking-wider shadow-sm">
+                        <span className="flex items-center gap-1 text-[10px] font-black text-[#6e7781] bg-[#f6f8fa] border border-[#d0d7de] px-2 py-1 rounded-md w-fit uppercase tracking-wider shadow-sm">
                           <EyeOff size={12} strokeWidth={2.5} /> Hidden
                         </span>
                       )}
                     </td>
                     <td className="p-4 text-center space-x-2">
-                      <button
-                        onClick={() => toggleHide(review.review_id)}
-                        className="text-[#6e7781] hover:text-[#9a6700] transition-colors p-2"
-                        title={review.is_hidden ? "Show Review" : "Hide Review"}
-                      >
-                        {review.is_hidden ? (
-                          <Eye size={18} />
-                        ) : (
-                          <EyeOff size={18} />
-                        )}
-                      </button>
+                      {/* MỚI: Chỉ hiển thị nút ẩn/hiện nếu không phải Fake review chắc chắn (>= 60%) */}
+                      {!(review.is_fake && review.confidence_score >= 60) && (
+                        <button
+                          onClick={() => toggleHide(review.review_id)}
+                          className="text-[#6e7781] hover:text-[#9a6700] transition-colors p-2"
+                          title={
+                            review.is_hidden ? "Show Review" : "Hide Review"
+                          }
+                        >
+                          {review.is_hidden ? (
+                            <Eye size={18} />
+                          ) : (
+                            <EyeOff size={18} />
+                          )}
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDeleteClick(review.review_id)}
                         className="text-[#6e7781] hover:text-[#cf222e] transition-colors p-2"

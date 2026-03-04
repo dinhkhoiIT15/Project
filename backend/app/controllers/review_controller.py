@@ -29,20 +29,31 @@ except Exception as e:
     print(f"❌ Failed to load AI Model: {e}")
     svm_model = None
 
-def predict_fake_review(content):
-    """AI Support Vector Machines for detecting fake reviews"""
+def predict_fake_score(content):
+    """AI Support Vector Machines: Trả về chính xác phần trăm khả năng là Fake"""
     if svm_model is None:
-        return False
+        return 0.0
     
     try:
-        prediction = svm_model.predict([content])[0]
-        # Chuyển mọi kết quả về chuỗi in hoa để so sánh an toàn tuyệt đối
-        pred_str = str(prediction).strip().upper()
-        # Bao phủ mọi trường hợp: số 1, chuỗi '1', chuỗi '1.0', hoặc nhãn 'CG'
-        return True if (pred_str == '1' or pred_str == '1.0' or pred_str == 'CG') else False
+        probabilities = svm_model.predict_proba([content])[0]
+        classes = svm_model.classes_
+        
+        # Tìm xem class Fake (1, 1.0 hoặc CG) đang nằm ở vị trí nào trong mảng xác suất
+        fake_idx = -1
+        for i, c in enumerate(classes):
+            c_str = str(c).strip().upper()
+            if c_str in ('1', '1.0', 'CG'):
+                fake_idx = i
+                break
+        
+        # Nếu tìm thấy, trả về đúng % của class Fake
+        if fake_idx != -1:
+            return float(probabilities[fake_idx] * 100)
+            
+        return 0.0
     except Exception as e:
-        print(f"Error during AI review analysis: {e}")
-        return False
+        print(f"Error calculating AI score: {e}")
+        return 0.0
 
 def test_ai_review():
     """API dành riêng cho Test UI để kiểm tra độ tin cậy của AI"""
@@ -105,10 +116,22 @@ def add_review():
     if existing_review:
         return jsonify({"message": "You have already reviewed this product."}), 409
     
-    # MỚI: Đưa qua AI kiểm duyệt
-    is_fake = predict_fake_review(content)
-    # Tự động ẩn luôn nếu AI bảo là Fake
-    is_hidden = True if is_fake else False
+    # MỚI: Lấy phần trăm Fake từ AI
+    fake_prob = round(predict_fake_score(content), 2)
+    
+    is_fake = False
+    is_hidden = False
+    
+    # Logic kiểm duyệt 3 cấp độ
+    if fake_prob >= 60.0:
+        is_fake = True
+        is_hidden = True   # >= 60%: Nguy hiểm -> Ẩn tự động, đưa vào Alert
+    elif fake_prob >= 30.0:
+        is_fake = True
+        is_hidden = False  # >= 30%: Nghi ngờ -> Vẫn hiện, nhưng đưa vào Alert
+    else:
+        is_fake = False
+        is_hidden = False  # < 30%: An toàn (Real)
 
     new_review = Review(
         user_id=user_id,
@@ -116,7 +139,8 @@ def add_review():
         content=content,
         rating=rating,
         is_fake=is_fake,
-        is_hidden=is_hidden
+        is_hidden=is_hidden,
+        confidence_score=fake_prob # Lưu % vào DB
     )
     
     try:
@@ -206,8 +230,15 @@ def admin_get_all_reviews():
     product_id = request.args.get('product_id')
     username = request.args.get('username') 
     page = request.args.get('page', 1, type=int) 
+    tab = request.args.get('tab', 'real') # MỚI: Lấy tham số tab từ Frontend
     
     query = db.session.query(Review, User).join(User, Review.user_id == User.user_id)
+    
+    # MỚI: Lọc dữ liệu theo tab tương ứng
+    if tab == 'fake':
+        query = query.filter(Review.is_fake == True)
+    else:
+        query = query.filter(Review.is_fake == False)
     
     if product_id and product_id.isdigit():
         query = query.filter(Review.product_id == int(product_id))
@@ -228,6 +259,7 @@ def admin_get_all_reviews():
             "rating": r.rating,
             "is_fake": r.is_fake,
             "is_hidden": r.is_hidden, 
+            "confidence_score": getattr(r, 'confidence_score', 0.0), # Lấy % hiển thị cho Admin
             "created_at": r.created_at.strftime('%Y-%m-%d') if r.created_at else "Unknown"
         })
         

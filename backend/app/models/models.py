@@ -36,9 +36,11 @@ class Review(db.Model):
     product_id = db.Column(db.Integer, db.ForeignKey('products.product_id'))
     content = db.Column(db.Text, nullable=False)
     rating = db.Column(db.Integer, default=5)
-    is_fake = db.Column(db.Boolean, default=False)
-    is_hidden = db.Column(db.Boolean, default=False) 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_fake = db.Column(db.Boolean, default=False)
+    is_hidden = db.Column(db.Boolean, default=False)
+    # MỚI: Thêm trường lưu phần trăm của AI
+    confidence_score = db.Column(db.Float, default=0.0)
 
 class Order(db.Model):
     __tablename__ = 'orders'
