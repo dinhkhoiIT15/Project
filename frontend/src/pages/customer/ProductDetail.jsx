@@ -123,12 +123,25 @@ const ProductDetail = () => {
     }
     setSubmittingReview(true);
     try {
-      await api.post("/reviews", {
-        product_id: product.product_id,
+      // Sửa lỗi: Định nghĩa dữ liệu cần gửi
+      const reviewData = {
+        product_id: id,
         content: newReviewContent,
         rating: newReviewRating,
-      });
-      addToast("Review submitted successfully!", "success");
+      };
+
+      const res = await api.post("/reviews", reviewData);
+
+      // MỚI: Xử lý thông báo dựa trên kết quả kiểm duyệt của AI SVM
+      if (res.data.review && res.data.review.is_fake) {
+        addToast(
+          "Your review has been submitted and is pending moderation.",
+          "info",
+        );
+      } else {
+        addToast("Review submitted successfully!", "success");
+      }
+
       setNewReviewContent("");
       setNewReviewRating(5);
     } catch (err) {

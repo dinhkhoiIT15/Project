@@ -22,8 +22,12 @@ const ManageReviews = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
   const { addToast } = useToast();
+
+  // MỚI: Các biến State phục vụ cho Test AI
+  const [testContent, setTestContent] = useState("");
+  const [testResult, setTestResult] = useState(null);
+  const [testLoading, setTestLoading] = useState(false);
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [reviewToDelete, setReviewToDelete] = useState(null);
@@ -62,6 +66,27 @@ const ManageReviews = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTestAI = async () => {
+    if (!testContent.trim()) {
+      addToast("Please enter a review to test", "warning");
+      return;
+    }
+    setTestLoading(true);
+    setTestResult(null);
+    try {
+      const res = await api.post("/reviews/test-ai", { content: testContent });
+      setTestResult(res.data);
+    } catch (err) {
+      // Ưu tiên hiển thị thông báo lỗi chi tiết từ Backend gửi về
+      const errorMsg =
+        err.response?.data?.message ||
+        "Test failed. Check if AI model is loaded.";
+      addToast(errorMsg, "error");
+    } finally {
+      setTestLoading(false);
     }
   };
 
@@ -137,6 +162,59 @@ const ManageReviews = () => {
         </div>
       </div>
 
+      {/* KHỐI UI TEST AI TẠM THỜI */}
+      <div className="bg-white border border-[#d0d7de] rounded-lg shadow-sm p-5 mb-6">
+        <h2 className="text-sm font-black text-[#1f2328] mb-3 flex items-center gap-2">
+          <AlertTriangle size={18} className="text-[#0969da]" /> AI Fake Review
+          Tester
+        </h2>
+        <div className="flex gap-3 items-start">
+          <textarea
+            className="flex-1 border border-[#d0d7de] rounded-md p-3 text-sm outline-none focus:border-[#0969da] resize-none h-14 bg-[#f6f8fa] focus:bg-white transition-colors"
+            placeholder="Paste any review content here to test AI prediction (e.g., 'Very nice set. Good quality...')"
+            value={testContent}
+            onChange={(e) => setTestContent(e.target.value)}
+          ></textarea>
+          <button
+            onClick={handleTestAI}
+            disabled={testLoading}
+            className="bg-[#1f2328] text-white px-6 py-2 rounded-md text-sm font-bold hover:bg-[#24292f] transition-colors h-14 disabled:opacity-50 min-w-[120px] shadow-sm"
+          >
+            {testLoading ? "Testing..." : "Test AI"}
+          </button>
+        </div>
+
+        {/* Khối hiển thị kết quả phần trăm */}
+        {testResult && (
+          <div
+            className={`mt-4 p-4 rounded-md border flex justify-between items-center transition-all ${testResult.is_fake ? "bg-[#ffebe9] border-[#cf222e]/30" : "bg-[#dafbe1] border-[#1a7f37]/30"}`}
+          >
+            <div className="flex flex-col">
+              <span className="text-xs text-[#6e7781] font-bold uppercase tracking-wider mb-1">
+                AI Final Decision
+              </span>
+              <span
+                className={`text-xl font-black ${testResult.is_fake ? "text-[#cf222e]" : "text-[#1a7f37]"}`}
+              >
+                {testResult.is_fake
+                  ? "🚨 SPAM / FAKE (CG)"
+                  : "✅ REAL / HUMAN (OR)"}
+              </span>
+            </div>
+            <div className="flex flex-col items-end border-l border-white/50 pl-6">
+              <span className="text-xs text-[#6e7781] font-bold uppercase tracking-wider mb-1">
+                Confidence Score
+              </span>
+              <span
+                className={`text-2xl font-black ${testResult.is_fake ? "text-[#cf222e]" : "text-[#1a7f37]"}`}
+              >
+                {testResult.confidence}%
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="bg-white border border-[#d0d7de] rounded-lg shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -193,15 +271,16 @@ const ManageReviews = () => {
                     <td className="p-4 truncate" title={review.content}>
                       "{review.content}"
                     </td>
-                    <td className="p-4 flex flex-col gap-1">
+                    <td className="p-4 flex flex-col gap-1.5">
                       {review.is_fake && (
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-[#cf222e] bg-[#ffebe9] px-2 py-0.5 rounded w-fit">
-                          <AlertTriangle size={10} /> Fake
+                        <span className="flex items-center gap-1 text-[10px] font-black text-[#cf222e] bg-[#ffebe9] border border-[#cf222e]/20 px-2 py-1 rounded-md w-fit uppercase tracking-wider shadow-sm">
+                          <AlertTriangle size={12} strokeWidth={2.5} /> AI
+                          Flagged
                         </span>
                       )}
                       {review.is_hidden && (
-                        <span className="text-[10px] font-bold text-[#9a6700] bg-[#fff8c5] px-2 py-0.5 rounded w-fit">
-                          Hidden
+                        <span className="flex items-center gap-1 text-[10px] font-black text-[#9a6700] bg-[#fff8c5] border border-[#9a6700]/20 px-2 py-1 rounded-md w-fit uppercase tracking-wider shadow-sm">
+                          <EyeOff size={12} strokeWidth={2.5} /> Hidden
                         </span>
                       )}
                     </td>
