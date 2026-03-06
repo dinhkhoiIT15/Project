@@ -316,6 +316,17 @@ def toggle_hide_review(review_id):
     socketio.emit('review_list_updated') 
     return jsonify({"message": "Status updated", "is_hidden": review.is_hidden}), 200
 
+def accept_review(review_id):
+    review = Review.query.get(review_id)
+    if not review: return jsonify({"message": "Review not found"}), 404
+    
+    review.is_fake = False
+    review.is_hidden = False  # Đảm bảo nó được hiển thị
+    db.session.commit()
+    
+    socketio.emit('review_list_updated') 
+    return jsonify({"message": "Review accepted as real", "status": "success"}), 200
+
 def update_review(review_id):
     user_id = get_jwt_identity()
     data = request.get_json()

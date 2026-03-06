@@ -132,6 +132,16 @@ const ManageReviews = () => {
     }
   };
 
+  const handleAccept = async (id) => {
+    try {
+      await api.put(`/reviews/${id}/accept`);
+      addToast("Review accepted as real", "success");
+      fetchReviews();
+    } catch (err) {
+      addToast("Accept failed", "error");
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
@@ -319,7 +329,7 @@ const ManageReviews = () => {
                         ))}
                       </div>
                     </td>
-                    <td className="p-4 truncate" title={review.content}>
+                    <td className="p-4 max-w-md whitespace-normal break-words max-h-24 overflow-y-auto" title={review.content}>
                       "{review.content}"
                     </td>
                     <td className="p-4 flex flex-col gap-1.5">
@@ -335,7 +345,7 @@ const ManageReviews = () => {
                           {review.confidence_score >= 60
                             ? "AI Blocked"
                             : "AI Flagged"}{" "}
-                          ({review.confidence_score}%)
+                          ({review.confidence_score.toFixed(2)}%)
                         </span>
                       )}
 
@@ -360,6 +370,16 @@ const ManageReviews = () => {
                           ) : (
                             <EyeOff size={18} />
                           )}
+                        </button>
+                      )}
+                      {/* MỚI: Nút Accept chỉ hiển thị cho Fake reviews */}
+                      {review.is_fake && (
+                        <button
+                          onClick={() => handleAccept(review.review_id)}
+                          className="text-[#6e7781] hover:text-[#1a7f37] transition-colors p-2"
+                          title="Accept as Real Review"
+                        >
+                          <CheckCircle size={18} />
                         </button>
                       )}
                       <button
