@@ -163,11 +163,11 @@ def add_review():
         # Vẫn báo cho Admin biết để cập nhật danh sách quản lý
         socketio.emit('review_list_updated') 
         
-        # MỚI: Trả về trạng thái is_fake để Frontend hiện đúng thông báo (Toast)
+        # MỚI: Trả về trạng thái is_fake và is_hidden để Frontend hiện đúng thông báo (Toast)
         return jsonify({
             "message": "Review added successfully", 
             "status": "success",
-            "review": {"is_fake": is_fake}
+            "review": {"is_fake": is_fake, "is_hidden": is_hidden}
         }), 201
     except Exception as e:
         db.session.rollback()
@@ -324,6 +324,10 @@ def accept_review(review_id):
     review.is_hidden = False  # Đảm bảo nó được hiển thị
     db.session.commit()
     
+    # Emit to product room to show the review
+    socketio.emit('review_unhidden', {
+        "review_id": review_id
+    }, to=f'product_{review.product_id}')
     socketio.emit('review_list_updated') 
     return jsonify({"message": "Review accepted as real", "status": "success"}), 200
 
@@ -337,20 +341,44 @@ def update_review(review_id):
         
     if 'content' in data:
         review.content = data['content']
-        review.is_fake = predict_fake_review(data['content']) 
+        # Update AI prediction
+        fake_prob = round(predict_fake_score(data['content']), 2)
+        review.confidence_score = fake_prob
+        if fake_prob >= 60.0:
+            review.is_fake = True
+            review.is_hidden = True
+        elif fake_prob >= 30.0:
+            review.is_fake = True
+            review.is_hidden = False
+        else:
+            review.is_fake = False
+            review.is_hidden = False
     if 'rating' in data:
         review.rating = data['rating']
         
     db.session.commit()
     
-    socketio.emit('review_updated', {
-        "review_id": review.review_id,
-        "content": review.content,
-        "rating": review.rating
-    }, to=f'product_{review.product_id}')
+    # Only emit if not hidden
+    if not review.is_hidden:
+        socketio.emit('review_updated', {
+            "review_id": review.review_id,
+            "content": review.content,
+            "rating": review.rating
+        }, to=f'product_{review.product_id}')
+    else:
+        # If hidden, emit delete to remove from UI
+        socketio.emit('review_deleted', {
+            "review_id": review.review_id
+        }, to=f'product_{review.product_id}')
+    
     socketio.emit('review_list_updated') 
     
-    return jsonify({"message": "Review updated successfully", "status": "success"}), 200
+    return jsonify({
+        "message": "Review updated successfully", 
+        "status": "success",
+        "is_hidden": review.is_hidden,
+        "is_fake": review.is_fake
+    }), 200
 
 def user_delete_review(review_id):
     user_id = get_jwt_identity()

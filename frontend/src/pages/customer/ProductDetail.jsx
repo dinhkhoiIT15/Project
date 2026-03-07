@@ -156,11 +156,17 @@ const ProductDetail = () => {
 
   const handleUpdateReview = async (reviewId) => {
     try {
-      await api.put(`/reviews/${reviewId}`, {
+      const res = await api.put(`/reviews/${reviewId}`, {
         content: editContent,
         rating: editRating,
       });
-      addToast("Review updated!", "success");
+      if (res.data.is_hidden) {
+        addToast("Your review has been updated and is pending moderation.", "info");
+        // Remove from local state since it's hidden
+        setReviews((prev) => prev.filter((r) => r.review_id !== reviewId));
+      } else {
+        addToast("Review updated!", "success");
+      }
       setEditingReviewId(null);
     } catch (err) {
       addToast("Failed to update", "error");
