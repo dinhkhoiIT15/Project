@@ -29,18 +29,15 @@ import ManageUsers from "./pages/admin/ManageUsers";
 
 const AppContent = () => {
   const location = useLocation();
-  const navigate = useNavigate(); // MỚI
+  const navigate = useNavigate();
   const isAdminPath = location.pathname.startsWith("/admin");
 
-  // MỚI: Lấy thêm trạng thái xác thực và thông tin user từ Context
   const { loading, isAuthenticated, user } = useAuth();
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
-  // MỚI: Tự động đánh chặn Admin.
-  // Nếu Admin gõ localhost... (tức là path "/") thì tự động nhảy sang /admin
   useEffect(() => {
     if (
       !loading &&

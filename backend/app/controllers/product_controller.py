@@ -4,13 +4,14 @@ import math
 from app.extensions import socketio 
 
 def generate_ai_description(name, category_name):
-    """Tạo mô tả sản phẩm tự động bằng AI (Giả lập)"""
+    """Generate AI product description based on name and category."""
     return f"Professional AI description for {name} ({category_name}): This high-quality product is designed for excellence and durability."
 
 def get_all_products():
     search = request.args.get('search', '')
     category_id = request.args.get('category_id', '')
-    page = request.args.get('page', 1, type=int) 
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 8, type=int)
     
     query = db.session.query(Product, Category.name.label('category_name')).outerjoin(
         Category, Product.category_id == Category.category_id
@@ -26,37 +27,10 @@ def get_all_products():
                 query = query.filter(Product.category_id == cat_id_int)
         except (ValueError, TypeError):
             pass
-            
-    pagination = query.order_by(Product.product_id.desc()).paginate(page=page, per_page=10, error_out=False)
-    products = pagination.items
-    search = request.args.get('search', '')
-    category_id = request.args.get('category_id', '')
     
-    try:
-        page = int(request.args.get('page', 1))
-        per_page = int(request.args.get('per_page', 8))
-    except ValueError:
-        page = 1
-        per_page = 8
-    
-    query = db.session.query(Product, Category.name.label('category_name')).outerjoin(
-        Category, Product.category_id == Category.category_id
-    )
-    
-    if search:
-        query = query.filter(Product.name.ilike(f'%{search}%'))
-        
-    if category_id and str(category_id).strip() != '' and str(category_id).lower() != 'null':
-        try:
-            cat_id_int = int(category_id)
-            if cat_id_int > 0:
-                query = query.filter(Product.category_id == cat_id_int)
-        except (ValueError, TypeError):
-            pass
-            
     total_count = query.count()
     total_pages = math.ceil(total_count / per_page)
-    products = query.offset((page - 1) * per_page).limit(per_page).all()
+    products = query.order_by(Product.product_id.desc()).offset((page - 1) * per_page).limit(per_page).all()
     
     result = []
     for p, category_name in products:
@@ -70,7 +44,7 @@ def get_all_products():
             "category_name": category_name or "General",
             "image_url": p.image_url
         })
-        
+    
     return jsonify({
         "products": result, 
         "total_pages": total_pages,

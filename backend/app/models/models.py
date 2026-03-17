@@ -39,7 +39,6 @@ class Review(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_fake = db.Column(db.Boolean, default=False)
     is_hidden = db.Column(db.Boolean, default=False)
-    # MỚI: Thêm trường lưu phần trăm của AI
     confidence_score = db.Column(db.Float, default=0.0)
 
 class Order(db.Model):

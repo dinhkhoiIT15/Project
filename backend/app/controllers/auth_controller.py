@@ -1,9 +1,9 @@
 from flask import request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
+from datetime import timedelta
 from app.models.models import db, User
-import datetime
-from app.extensions import socketio 
+from app.extensions import socketio
 
 def register():
     data = request.get_json()
@@ -61,7 +61,7 @@ def login():
         
     access_token = create_access_token(
         identity=str(user.user_id),
-        expires_delta=datetime.timedelta(days=1)
+        expires_delta=timedelta(days=1)
     )
     
     return jsonify({
