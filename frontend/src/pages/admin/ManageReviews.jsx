@@ -11,6 +11,7 @@ import {
   EyeOff,
   Eye,
   CheckCircle, // MỚI: Thêm icon cho tab Real
+  X
 } from "lucide-react";
 import { io } from "socket.io-client"; // MỚI: Import socket
 import Pagination from "../../components/common/Pagination";
@@ -35,6 +36,24 @@ const ManageReviews = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [reviewToDelete, setReviewToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [isContextModalOpen, setIsContextModalOpen] = useState(false);
+  const [contextData, setContextData] = useState(null);
+  const [contextLoading, setContextLoading] = useState(false);
+
+  const handleOpenContext = async (productId) => {
+    setIsContextModalOpen(true);
+    setContextLoading(true);
+    try {
+      const res = await api.get(`/reviews/admin/product-context/${productId}`);
+      setContextData(res.data);
+    } catch (err) {
+      addToast("Failed to load product context", "error");
+      setIsContextModalOpen(false);
+    } finally {
+      setContextLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchReviews();
@@ -329,10 +348,22 @@ const ManageReviews = () => {
                         ))}
                       </div>
                     </td>
-                    <td className="p-4 max-w-md whitespace-normal break-words max-h-24 overflow-y-auto" title={review.content}>
+                    <td 
+                      className="p-4 max-w-md whitespace-normal break-words max-h-24 overflow-y-auto cursor-pointer hover:bg-[#ddf4ff] hover:text-[#0969da] transition-colors rounded-md" 
+                      title="Click to view product context"
+                      onClick={() => handleOpenContext(review.product_id)}
+                    >
                       "{review.content}"
                     </td>
                     <td className="p-4 flex flex-col gap-1.5">
+                      {/* MỚI: Hiển thị cảnh báo Lạc đề / Sai chủ đề */}
+                      {review.is_irrelevant && (
+                        <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md w-fit shadow-sm border bg-[#f5f0ff] text-[#8250df] border-[#8250df]/20">
+                          <AlertTriangle size={12} strokeWidth={2.5} />
+                          Irrelevant Content
+                        </span>
+                      )}
+
                       {review.is_fake && (
                         <span
                           className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md w-fit shadow-sm border ${
@@ -397,6 +428,63 @@ const ManageReviews = () => {
           </table>
         </div>
       </div>
+
+      {isContextModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden animate-fade-in">
+            <div className="flex justify-between items-center p-4 border-b border-[#d0d7de] bg-[#f6f8fa]">
+              <h3 className="font-bold text-[#1f2328] flex items-center gap-2">
+                <Search size={18} className="text-[#0969da]" /> Product Context Check
+              </h3>
+              <button onClick={() => setIsContextModalOpen(false)} className="text-[#6e7781] hover:text-[#cf222e]">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-5 overflow-y-auto flex-1">
+              {contextLoading ? (
+                <div className="text-center py-10 text-[#6e7781] font-bold animate-pulse">Loading context...</div>
+              ) : contextData ? (
+                <>
+                  <div className="flex gap-4 items-center bg-[#f6f8fa] p-3 rounded-lg border border-[#d0d7de] mb-5">
+                    {contextData.product.image_url ? (
+                      <img src={contextData.product.image_url} alt="product" className="w-16 h-16 object-cover rounded-md border" />
+                    ) : (
+                      <div className="w-16 h-16 bg-[#d0d7de] rounded-md flex items-center justify-center text-xs">No Img</div>
+                    )}
+                    <div>
+                      <h4 className="font-bold text-[#1f2328]">{contextData.product.name}</h4>
+                      <p className="text-[#0969da] font-black text-sm">${contextData.product.price}</p>
+                      <p className="text-xs text-[#6e7781] mt-1">Product ID: #{contextData.product.product_id}</p>
+                    </div>
+                  </div>
+
+                  <h4 className="font-bold text-sm text-[#1f2328] mb-3 border-b pb-2">All Reviews for this Product</h4>
+                  <div className="space-y-3">
+                    {contextData.reviews.length === 0 ? (
+                      <p className="text-sm text-[#6e7781]">No reviews yet.</p>
+                    ) : (
+                      contextData.reviews.map((ctxRev) => (
+                        <div key={ctxRev.review_id} className={`p-3 rounded-md border text-sm ${ctxRev.is_fake ? 'bg-[#ffebe9] border-[#cf222e]/30' : 'bg-white border-[#d0d7de]'}`}>
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="font-bold text-[#1f2328]">{ctxRev.username} <span className="text-xs font-normal text-[#6e7781]">({ctxRev.date})</span></span>
+                            {ctxRev.is_fake && (
+                              <span className="text-[10px] bg-[#cf222e] text-white px-1.5 py-0.5 rounded uppercase font-bold">Fake Flagged</span>
+                            )}
+                          </div>
+                          <p className="text-[#1f2328] italic">"{ctxRev.content}"</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-10 text-[#cf222e]">Failed to load data.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <Pagination
         currentPage={currentPage}

@@ -10,7 +10,8 @@ from app.controllers.review_controller import (
     user_delete_review,  
     test_ai_review,       # MỚI: Import API Test
     toggle_hide_review,
-    accept_review         # MỚI: Import API Accept
+    accept_review,        # MỚI: Import API Accept
+    admin_get_product_context
 )
 from app.utils.decorators import admin_required
 from app.controllers.review_controller import toggle_hide_review
@@ -32,3 +33,4 @@ review_bp.route('/api/reviews/product/<int:product_id>', methods=['GET'])(get_pr
 
 review_bp.route('/api/reviews/<int:review_id>', methods=['PUT'])(jwt_required()(update_review))
 review_bp.route('/api/reviews/user/<int:review_id>', methods=['DELETE'])(jwt_required()(user_delete_review))
+review_bp.route('/api/reviews/admin/product-context/<int:product_id>', methods=['GET'])(admin_required()(admin_get_product_context))

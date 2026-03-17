@@ -1,9 +1,10 @@
 from flask import request, jsonify
-from app.models.models import db, Review, Product, Order, OrderDetail, User, Notification
+from app.models.models import db, Review, Product, Order, OrderDetail, User, Notification, Category
 from flask_jwt_extended import get_jwt_identity
 from datetime import datetime
 from app.extensions import socketio
 import os
+import re
 import torch
 import torch.nn.functional as F
 from transformers import BertTokenizer, BertForSequenceClassification
@@ -41,6 +42,54 @@ else:
         print("✅ Model loaded successfully!")
     except Exception as e:
         print(f"❌ Failed to load Model: {e}")
+
+def is_gibberish(text):
+    """Phát hiện chuỗi vô nghĩa, quảng cáo hoặc link tào lao."""
+    # 1. Chặn Link quảng cáo
+    if re.search(r'(http://|https://|www\.|[a-zA-Z0-9-]+\.[a-zA-Z]{2,})', text):
+        return True
+    
+    words = text.split()
+    for word in words:
+        # 2. Từ quá dài không có khoảng trắng (VD: asdasdasdasdasdasd)
+        if len(word) > 20:
+            return True
+        # 3. Chuỗi chứa 6 phụ âm liên tiếp (VD: bcdfgh)
+        if re.search(r'[bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ]{6,}', word):
+            return True
+            
+    return False
+
+def is_irrelevant_comment(content, product_name, category_name):
+    """Check if the review is irrelevant or off-topic for the product."""
+    content_lower = content.lower()
+    
+    # 1. Blacklist of keywords from other categories (can be expanded)
+    # Example: If selling a Phone, but the comment contains words related to Clothing, Home Appliances...
+    wrong_context_keywords = {
+        'phone': ['shirt', 'pants', 'shoes', 'fridge', 'kitchen', 'keyboard', 'mouse'],
+        'laptop': ['shirt', 'pants', 'phone', 'lipstick', 'sunscreen'],
+        'clothing': ['battery', 'screen', 'keyboard', 'specs', 'ram', 'ssd']
+    }
+    
+    # Determine the current product category (based on category_name or product_name)
+    current_context = ""
+    if category_name:
+        cat_lower = category_name.lower()
+        if 'phone' in cat_lower or 'mobile' in cat_lower: 
+            current_context = 'phone'
+        elif 'laptop' in cat_lower or 'computer' in cat_lower: 
+            current_context = 'laptop'
+        elif 'cloth' in cat_lower or 'apparel' in cat_lower: 
+            current_context = 'clothing'
+            
+    # If the product context is identified, check if the comment contains irrelevant keywords
+    if current_context in wrong_context_keywords:
+        for wrong_word in wrong_context_keywords[current_context]:
+            if wrong_word in content_lower:
+                return True  # Clearly irrelevant!
+
+    return False
 
 def predict_fake_score(content):
     """Calculate AI confidence score for fake review detection using BERT."""
@@ -127,7 +176,19 @@ def add_review():
     if existing_review:
         return jsonify({"message": "You have already reviewed this product."}), 409
     
-    fake_prob = round(predict_fake_score(content), 2)
+    # Lấy thông tin sản phẩm và danh mục để làm ngữ cảnh kiểm tra lạc đề
+    product_info = Product.query.get(product_id)
+    category_info = Category.query.get(product_info.category_id) if product_info and product_info.category_id else None
+    product_name = product_info.name if product_info else ""
+    category_name = category_info.name if category_info else ""
+
+    is_irrelevant_flag = is_irrelevant_comment(content, product_name, category_name)
+
+    # Kiểm tra Gibberish/Link tào lao trước
+    if is_gibberish(content):
+        fake_prob = 99.9  # Ép điểm tuyệt đối để đưa ngay vào thẻ AI Fake Alerts
+    else:
+        fake_prob = round(predict_fake_score(content), 2)
     
     is_fake = False
     is_hidden = False
@@ -149,7 +210,8 @@ def add_review():
         rating=rating,
         is_fake=is_fake,
         is_hidden=is_hidden,
-        confidence_score=fake_prob # Lưu % vào DB
+        confidence_score=fake_prob,
+        is_irrelevant=is_irrelevant_flag  # Lưu trạng thái lạc đề
     )
     
     try:
@@ -265,6 +327,7 @@ def admin_get_all_reviews():
             "is_fake": r.is_fake,
             "is_hidden": r.is_hidden,
             "confidence_score": getattr(r, 'confidence_score', 0.0),
+            "is_irrelevant": getattr(r, 'is_irrelevant', False), # MỚI: Trả về Frontend
             "created_at": r.created_at.strftime('%Y-%m-%d') if r.created_at else "Unknown"
         })
         
@@ -402,3 +465,37 @@ def user_delete_review(review_id):
     socketio.emit('review_list_updated')
     
     return jsonify({"message": "Review deleted successfully", "status": "success"}), 200
+
+def admin_get_product_context(product_id):
+    """API lấy thông tin sản phẩm và toàn bộ review của nó cho Pop-up"""
+    product = Product.query.get(product_id)
+    if not product:
+        return jsonify({"message": "Product not found"}), 404
+        
+    reviews = db.session.query(Review, User.username).join(User).filter(
+        Review.product_id == product_id
+    ).order_by(Review.created_at.desc()).all()
+    
+    result_reviews = []
+    for r, username in reviews:
+        result_reviews.append({
+            "review_id": r.review_id,
+            "username": username,
+            "content": r.content,
+            "rating": r.rating,
+            "is_fake": r.is_fake,
+            "is_hidden": r.is_hidden,
+            "confidence_score": getattr(r, 'confidence_score', 0.0),
+            "date": r.created_at.strftime('%b %d, %Y') if r.created_at else "Unknown"
+        })
+        
+    return jsonify({
+        "product": {
+            "product_id": product.product_id,
+            "name": product.name,
+            "image_url": product.image_url,
+            "price": product.price
+        },
+        "reviews": result_reviews,
+        "status": "success"
+    }), 200

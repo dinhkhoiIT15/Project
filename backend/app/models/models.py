@@ -40,6 +40,7 @@ class Review(db.Model):
     is_fake = db.Column(db.Boolean, default=False)
     is_hidden = db.Column(db.Boolean, default=False)
     confidence_score = db.Column(db.Float, default=0.0)
+    is_irrelevant = db.Column(db.Boolean, default=False)  # MỚI: Cột đánh dấu lạc đề
 
 class Order(db.Model):
     __tablename__ = 'orders'
