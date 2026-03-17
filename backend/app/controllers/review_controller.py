@@ -7,6 +7,8 @@ import os
 import re
 import torch
 import torch.nn.functional as F
+import threading
+import time
 from transformers import BertTokenizer, BertForSequenceClassification
 from pathlib import Path
 
@@ -20,28 +22,41 @@ MODEL_PATH = BACKEND_DIR / 'ai' / 'bert_fake_review_model'
 # Chuyển đổi thành string chuẩn của Hệ điều hành đang chạy (Windows)
 MODEL_PATH_STR = str(MODEL_PATH)
 
-# Kiểm tra đường dẫn tồn tại trước khi load để chặn lỗi NoneType
-if not MODEL_PATH.exists():
-    print(f"❌ ERROR: Model directory not found at: {MODEL_PATH_STR}")
-else:
-    print(f"Loading BERT Model from: {MODEL_PATH_STR}")
-    
-    # 1. LOAD TOKENIZER (Load thẳng từ vựng gốc, bỏ qua lỗi thiếu file local)
-    try:
-        print("Loading Tokenizer...")
-        bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-        print("✅ Tokenizer loaded successfully!")
-    except Exception as e:
-        print(f"❌ Failed to load Tokenizer: {e}")
+bert_tokenizer = None
+bert_model = None
+is_model_loaded = False
+model_lock = threading.Lock()
 
-    # 2. LOAD MODEL (Load phần tạ/weights mà bạn đã train ở local)
-    try:
-        print("Loading Model...")
-        bert_model = BertForSequenceClassification.from_pretrained(MODEL_PATH_STR, local_files_only=True)
-        bert_model.eval()
-        print("✅ Model loaded successfully!")
-    except Exception as e:
-        print(f"❌ Failed to load Model: {e}")
+def load_ai_model():
+    """Hàm tải mô hình AI chạy ngầm trên một luồng phụ"""
+    global bert_tokenizer, bert_model, is_model_loaded
+    
+    with model_lock:
+        if is_model_loaded: return
+        
+        if not MODEL_PATH.exists():
+            print(f"❌ ERROR: Model directory not found at: {MODEL_PATH_STR}")
+            return
+            
+        print(f"\n⏳ [Background Thread] Starting to load AI Model from: {MODEL_PATH_STR}...")
+        
+        try:
+            bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+            
+            # TỐI ƯU CẤP ĐỘ 1: Thêm low_cpu_mem_usage=True
+            bert_model = BertForSequenceClassification.from_pretrained(
+                MODEL_PATH_STR, 
+                local_files_only=True,
+                low_cpu_mem_usage=True
+            )
+            bert_model.eval()
+            is_model_loaded = True
+            print("✅ [Background Thread] AI Model Loaded & Ready to use!\n")
+        except Exception as e:
+            print(f"❌ [Background Thread] Failed to load Model: {e}")
+
+# TỐI ƯU CẤP ĐỘ 2: Kích hoạt luồng chạy ngầm ngay khi file khởi tạo
+threading.Thread(target=load_ai_model, daemon=True).start()
 
 def is_gibberish(text):
     """Phát hiện chuỗi vô nghĩa, quảng cáo hoặc link tào lao."""
@@ -93,7 +108,14 @@ def is_irrelevant_comment(content, product_name, category_name):
 
 def predict_fake_score(content):
     """Calculate AI confidence score for fake review detection using BERT."""
-    if bert_model is None:
+    # Đợi tối đa 10 giây nếu model đang tải ngầm
+    wait_time = 0
+    while not is_model_loaded and wait_time < 10:
+        time.sleep(1)
+        wait_time += 1
+        
+    if bert_model is None or not is_model_loaded:
+        print("⚠️ Warning: Model not loaded in time.")
         return 0.0
     
     try:
@@ -122,8 +144,14 @@ def test_ai_review():
     if not content:
         return jsonify({"message": "Content is required"}), 400
         
-    if bert_model is None:
-        return jsonify({"message": "AI model not loaded"}), 500
+    # Chờ model load ngầm nếu Admin test quá nhanh
+    wait_time = 0
+    while not is_model_loaded and wait_time < 10:
+        time.sleep(1)
+        wait_time += 1
+        
+    if bert_model is None or not is_model_loaded:
+        return jsonify({"message": "AI is still warming up in the background. Please wait a few seconds and try again!"}), 503
         
     try:
         inputs = bert_tokenizer(content, return_tensors="pt", truncation=True, padding=True, max_length=128)
