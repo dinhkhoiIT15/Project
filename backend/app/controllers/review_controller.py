@@ -3,53 +3,66 @@ from app.models.models import db, Review, Product, Order, OrderDetail, User, Not
 from flask_jwt_extended import get_jwt_identity
 from datetime import datetime
 from app.extensions import socketio
-import joblib
 import os
-import string
-import nltk
-from nltk.corpus import stopwords
-import __main__
+import torch
+import torch.nn.functional as F
+from transformers import BertTokenizer, BertForSequenceClassification
+from pathlib import Path
 
-def text_process(review):
-    """Text preprocessing: remove punctuation and stopwords."""
-    nopunc = [char for char in review if char not in string.punctuation]
-    nopunc = ''.join(nopunc)
-    return [word for word in nopunc.split() if word.lower() not in stopwords.words('english')]
+# Sử dụng pathlib để xây dựng đường dẫn chuẩn xác và an toàn trên Windows
+# __file__ đang ở: backend/app/controllers/review_controller.py
+# .parents[2] sẽ trỏ về thư mục gốc: backend/
+CURRENT_FILE = Path(__file__).resolve()
+BACKEND_DIR = CURRENT_FILE.parents[2]
+MODEL_PATH = BACKEND_DIR / 'ai' / 'bert_fake_review_model'
 
-# Make text_process available to pickled model deserialization
-__main__.text_process = text_process
+# Chuyển đổi thành string chuẩn của Hệ điều hành đang chạy (Windows)
+MODEL_PATH_STR = str(MODEL_PATH)
 
-# Load the AI SVM model trained in Step 1
-MODEL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../ai/svm_fake_review_model.pkl'))
-try:
-    svm_model = joblib.load(MODEL_PATH)
-    print("✅ AI Model loaded successfully!")
-except Exception as e:
-    print(f"❌ Failed to load AI Model: {e}")
-    svm_model = None
+# Kiểm tra đường dẫn tồn tại trước khi load để chặn lỗi NoneType
+if not MODEL_PATH.exists():
+    print(f"❌ ERROR: Model directory not found at: {MODEL_PATH_STR}")
+else:
+    print(f"Loading BERT Model from: {MODEL_PATH_STR}")
+    
+    # 1. LOAD TOKENIZER (Load thẳng từ vựng gốc, bỏ qua lỗi thiếu file local)
+    try:
+        print("Loading Tokenizer...")
+        bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        print("✅ Tokenizer loaded successfully!")
+    except Exception as e:
+        print(f"❌ Failed to load Tokenizer: {e}")
+
+    # 2. LOAD MODEL (Load phần tạ/weights mà bạn đã train ở local)
+    try:
+        print("Loading Model...")
+        bert_model = BertForSequenceClassification.from_pretrained(MODEL_PATH_STR, local_files_only=True)
+        bert_model.eval()
+        print("✅ Model loaded successfully!")
+    except Exception as e:
+        print(f"❌ Failed to load Model: {e}")
 
 def predict_fake_score(content):
-    """Calculate AI confidence score for fake review detection using SVM model."""
-    if svm_model is None:
+    """Calculate AI confidence score for fake review detection using BERT."""
+    if bert_model is None:
         return 0.0
     
     try:
-        probabilities = svm_model.predict_proba([content])[0]
-        classes = svm_model.classes_
+        # 1. Mã hóa văn bản
+        inputs = bert_tokenizer(content, return_tensors="pt", truncation=True, padding=True, max_length=128)
         
-        fake_idx = -1
-        for i, c in enumerate(classes):
-            c_str = str(c).strip().upper()
-            if c_str in ('1', '1.0', 'CG'):
-                fake_idx = i
-                break
-        
-        if fake_idx != -1:
-            return float(probabilities[fake_idx] * 100)
+        # 2. Dự đoán với PyTorch (tắt tính toán đạo hàm để tiết kiệm RAM)
+        with torch.no_grad():
+            outputs = bert_model(**inputs)
             
-        return 0.0
+            # 3. Tính xác suất (Softmax)
+            probabilities = F.softmax(outputs.logits, dim=-1)
+            
+            # Label 1 là Fake review (Giả sử index 1 tương ứng với fake trong dữ liệu train)
+            fake_score = float(probabilities[0][1])
+            return fake_score
     except Exception as e:
-        print(f"Error calculating AI score: {e}")
+        print(f"❌ Error during BERT prediction: {e}")
         return 0.0
 
 def test_ai_review():
@@ -60,17 +73,25 @@ def test_ai_review():
     if not content:
         return jsonify({"message": "Content is required"}), 400
         
-    if svm_model is None:
+    if bert_model is None:
         return jsonify({"message": "AI model not loaded"}), 500
         
     try:
-        prediction = svm_model.predict([content])[0]
+        inputs = bert_tokenizer(content, return_tensors="pt", truncation=True, padding=True, max_length=128)
         
-        pred_str = str(prediction).strip().upper()
-        is_fake = pred_str in ('1', '1.0', 'CG')
-        
-        probabilities = svm_model.predict_proba([content])[0]
-        confidence = float(max(probabilities) * 100)
+        with torch.no_grad():
+            outputs = bert_model(**inputs)
+            probabilities = F.softmax(outputs.logits, dim=-1)[0]
+            
+            # Lấy xác suất của từng nhãn
+            real_prob = float(probabilities[0])
+            fake_prob = float(probabilities[1])
+            
+            # Nếu xác suất fake > real thì kết luận là Fake
+            is_fake = fake_prob > real_prob
+            
+            # Độ tự tin (Confidence) là giá trị lớn nhất (đã nhân 100%)
+            confidence = max(real_prob, fake_prob) * 100
         
         return jsonify({
             "is_fake": is_fake,

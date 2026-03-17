@@ -4,6 +4,9 @@ venv/
 __pycache__/
 *.pyc
 
+backend/ai/bert_fake_review_model/
+*.safetensors
+
 # Bỏ qua file chứa mật khẩu/cấu hình bí mật
 .env
 
