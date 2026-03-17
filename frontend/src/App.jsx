@@ -7,9 +7,9 @@ import {
   useLocation,
   useNavigate, // MỚI: Thêm useNavigate
 } from "react-router-dom";
-import { ToastProvider } from "./context/ToastContext";
-import { AuthProvider, useAuth } from "./context/AuthContext";
-import { CartProvider } from "./context/CartContext";
+import { ToastProvider } from "./context/ToastContext.jsx";
+import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
+import { CartProvider } from "./context/CartContext.jsx";
 import Home from "./pages/customer/Home";
 import AdminLayout from "./components/layout/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
