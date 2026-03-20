@@ -1,71 +1,20 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React from "react";
 import Navbar from "../../components/layout/Navbar";
-import { io } from "socket.io-client";
-import api from "../../services/api";
 import { ClipboardList, Clock, Package, Star } from "lucide-react";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
 import Pagination from "../../components/common/Pagination";
+import useMyOrders from "../../hooks/customer/useMyOrders";
 
 const MyOrders = () => {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-
-  useEffect(() => {
-    fetchOrders();
-  }, [currentPage]);
-
-  const fetchOrders = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get(
-        `/orders/my-orders?page=${currentPage}&per_page=5`,
-      );
-      setOrders(res.data.orders || []);
-      setTotalPages(res.data.total_pages || 1);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const socket = io("http://localhost:5000");
-
-    socket.on("order_status_changed", (data) => {
-      setOrders((prevOrders) =>
-        prevOrders.map((order) =>
-          order.order_id === data.order_id
-            ? {
-                ...order,
-                order_status: data.new_status,
-                payment_status: data.payment_status,
-              }
-            : order,
-        ),
-      );
-    });
-
-    return () => socket.disconnect();
-  }, []);
-
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-100 text-green-700 border-green-200";
-      case "pending":
-        return "bg-yellow-100 text-yellow-700 border-yellow-200";
-      case "cancelled":
-        return "bg-red-100 text-red-700 border-red-200";
-      default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
-    }
-  };
+  const {
+    orders,
+    loading,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    navigate,
+    getStatusStyle,
+  } = useMyOrders();
 
   return (
     <div className="min-h-screen bg-white">

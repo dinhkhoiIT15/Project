@@ -1,101 +1,24 @@
-import React, { useState, useEffect } from "react";
-import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
+import React from "react";
 import Navbar from "../../components/layout/Navbar";
 import ProductCard from "../../components/common/ProductCard";
 import Pagination from "../../components/common/Pagination";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
-import api from "../../services/api";
-import { useToast } from "../../context/ToastContext";
-import { useCart } from "../../context/CartContext";
 import { Loader2 } from "lucide-react";
-import { io } from "socket.io-client";
+import useHome from "../../hooks/customer/useHome";
 
 const Home = () => {
-  const [products, setProducts] = useState([]);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { addToast } = useToast();
-  const { fetchCartCount } = useCart();
-  const navigate = useNavigate();
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-
-  const [searchParams] = useSearchParams();
-  const location = useLocation();
-  const searchTerm = searchParams.get("search") || "";
-  const categoryParam = searchParams.get("category_id") || "";
-
-  const [selectedCategory, setSelectedCategory] = useState(categoryParam);
-
-  useEffect(() => {
-    setSelectedCategory(categoryParam);
-  }, [location.key, categoryParam]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, selectedCategory]);
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    fetchProducts();
-  }, [selectedCategory, currentPage, searchTerm, refreshKey]);
-
-  useEffect(() => {
-    const socket = io("http://localhost:5000");
-
-    socket.on("product_list_updated", () => {
-      setRefreshKey((prev) => prev + 1);
-    });
-
-    return () => socket.disconnect();
-  }, []);
-
-  const fetchCategories = async () => {
-    try {
-      const res = await api.get("/categories");
-      setCategories(res.data.categories || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const fetchProducts = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get(
-        `/products?search=${searchTerm}&category_id=${selectedCategory}&page=${currentPage}&per_page=8`,
-      );
-
-      if (res.data.status === "success") {
-        setProducts(res.data.products || []);
-        setTotalPages(res.data.total_pages || 1);
-      }
-    } catch (err) {
-      addToast("Error loading products", "error");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddToCart = async (productId) => {
-    if (!localStorage.getItem("token") && !sessionStorage.getItem("token")) {
-      addToast("Sign in to add to cart", "info");
-      return;
-    }
-    try {
-      await api.post("/cart", { product_id: productId, quantity: 1 });
-      addToast("Product added to cart!", "success");
-      fetchCartCount();
-    } catch (err) {
-      addToast("Failed to add", "error");
-    }
-  };
+  const {
+    products,
+    categories,
+    loading,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    searchTerm,
+    selectedCategory,
+    navigate,
+    handleAddToCart,
+  } = useHome();
 
   return (
     <div className="min-h-screen bg-white">

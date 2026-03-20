@@ -1,39 +1,17 @@
-import React, { useState } from "react";
+import React from "react";
 import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
-import api from "../../services/api";
-import { useAuth } from "../../context/AuthContext";
 import { LogIn } from "lucide-react";
-import { useNavigate } from "react-router-dom"; // MỚI: Import useNavigate
+import useLogin from "../../hooks/auth/useLogin";
 
 const Login = ({ onLoginSuccess, switchToRegister }) => {
-  const [formData, setFormData] = useState({ username: "", password: "" });
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
-  const { login } = useAuth();
-  const navigate = useNavigate(); // MỚI: Khởi tạo navigate
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const response = await api.post("/login", formData);
-      const { user, access_token } = response.data;
-
-      login(user, access_token);
-
-      // MỚI: Kiểm tra Role, nếu là Admin thì ép chuyển hướng vào Dashboard
-      if (user.role === "Admin") {
-        navigate("/admin");
-      } else if (onLoginSuccess) {
-        onLoginSuccess(user.role);
-      }
-    } catch (error) {
-      setErrorMsg(error.response?.data?.message || "Login failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    formData,
+    setFormData,
+    loading,
+    errorMsg,
+    handleSubmit,
+  } = useLogin(onLoginSuccess);
 
   return (
     <div className="flex w-full flex-col animate-fade-in pb-4 px-2">
