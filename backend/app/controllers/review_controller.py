@@ -5,58 +5,10 @@ from datetime import datetime
 from app.extensions import socketio
 import os
 import re
-import torch
-import torch.nn.functional as F
-import threading
-import time
-from transformers import BertTokenizer, BertForSequenceClassification
-from pathlib import Path
+import requests
 
-# Sử dụng pathlib để xây dựng đường dẫn chuẩn xác và an toàn trên Windows
-# __file__ đang ở: backend/app/controllers/review_controller.py
-# .parents[2] sẽ trỏ về thư mục gốc: backend/
-CURRENT_FILE = Path(__file__).resolve()
-BACKEND_DIR = CURRENT_FILE.parents[2]
-MODEL_PATH = BACKEND_DIR / 'ai' / 'bert_fake_review_model'
-
-# Chuyển đổi thành string chuẩn của Hệ điều hành đang chạy (Windows)
-MODEL_PATH_STR = str(MODEL_PATH)
-
-bert_tokenizer = None
-bert_model = None
-is_model_loaded = False
-model_lock = threading.Lock()
-
-def load_ai_model():
-    """Hàm tải mô hình AI chạy ngầm trên một luồng phụ"""
-    global bert_tokenizer, bert_model, is_model_loaded
-    
-    with model_lock:
-        if is_model_loaded: return
-        
-        if not MODEL_PATH.exists():
-            print(f"❌ ERROR: Model directory not found at: {MODEL_PATH_STR}")
-            return
-            
-        print(f"\n⏳ [Background Thread] Starting to load AI Model from: {MODEL_PATH_STR}...")
-        
-        try:
-            bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-            
-            # TỐI ƯU CẤP ĐỘ 1: Thêm low_cpu_mem_usage=True
-            bert_model = BertForSequenceClassification.from_pretrained(
-                MODEL_PATH_STR, 
-                local_files_only=True,
-                low_cpu_mem_usage=True
-            )
-            bert_model.eval()
-            is_model_loaded = True
-            print("✅ [Background Thread] AI Model Loaded & Ready to use!\n")
-        except Exception as e:
-            print(f"❌ [Background Thread] Failed to load Model: {e}")
-
-# TỐI ƯU CẤP ĐỘ 2: Kích hoạt luồng chạy ngầm ngay khi file khởi tạo
-threading.Thread(target=load_ai_model, daemon=True).start()
+# Địa chỉ của AI Microservice đang chạy ở cổng 8000
+AI_SERVICE_URL = "http://127.0.0.1:8000/predict"
 
 def is_gibberish(text):
     """Phát hiện chuỗi vô nghĩa, quảng cáo hoặc link tào lao."""
@@ -107,76 +59,54 @@ def is_irrelevant_comment(content, product_name, category_name):
     return False
 
 def predict_fake_score(content):
-    """Calculate AI confidence score for fake review detection using BERT."""
-    # Đợi tối đa 10 giây nếu model đang tải ngầm
-    wait_time = 0
-    while not is_model_loaded and wait_time < 10:
-        time.sleep(1)
-        wait_time += 1
-        
-    if bert_model is None or not is_model_loaded:
-        print("⚠️ Warning: Model not loaded in time.")
-        return 0.0
-    
+    """Gửi request sang AI Microservice để chấm điểm Fake Review."""
     try:
-        # 1. Mã hóa văn bản
-        inputs = bert_tokenizer(content, return_tensors="pt", truncation=True, padding=True, max_length=128)
-        
-        # 2. Dự đoán với PyTorch (tắt tính toán đạo hàm để tiết kiệm RAM)
-        with torch.no_grad():
-            outputs = bert_model(**inputs)
-            
-            # 3. Tính xác suất (Softmax)
-            probabilities = F.softmax(outputs.logits, dim=-1)
-            
-            # Label 1 là Fake review (Giả sử index 1 tương ứng với fake trong dữ liệu train)
-            fake_score = float(probabilities[0][1])
-            return fake_score
-    except Exception as e:
-        print(f"❌ Error during BERT prediction: {e}")
+        response = requests.post(AI_SERVICE_URL, json={"content": content}, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            # Lấy điểm fake_score (thang 0-100)
+            return data.get("fake_score", 0.0)
+        else:
+            print(f"⚠️ AI Service returned status {response.status_code}")
+            return 0.0
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Cannot connect to AI Microservice: {e}")
         return 0.0
 
 def test_ai_review():
-    """Test endpoint for UI to verify AI model confidence scores."""
+    """Test endpoint for UI to verify AI model confidence scores via Microservice."""
     data = request.get_json()
     content = data.get('content')
     
     if not content:
         return jsonify({"message": "Content is required"}), 400
         
-    # Chờ model load ngầm nếu Admin test quá nhanh
-    wait_time = 0
-    while not is_model_loaded and wait_time < 10:
-        time.sleep(1)
-        wait_time += 1
-        
-    if bert_model is None or not is_model_loaded:
-        return jsonify({"message": "AI is still warming up in the background. Please wait a few seconds and try again!"}), 503
-        
     try:
-        inputs = bert_tokenizer(content, return_tensors="pt", truncation=True, padding=True, max_length=128)
+        response = requests.post(AI_SERVICE_URL, json={"content": content}, timeout=5)
         
-        with torch.no_grad():
-            outputs = bert_model(**inputs)
-            probabilities = F.softmax(outputs.logits, dim=-1)[0]
+        if response.status_code == 503:
+            return jsonify({"message": "AI Server is warming up. Please wait!"}), 503
             
-            # Lấy xác suất của từng nhãn
-            real_prob = float(probabilities[0])
-            fake_prob = float(probabilities[1])
+        if response.status_code != 200:
+            return jsonify({"message": f"AI Service Error: {response.text}"}), 500
             
-            # Nếu xác suất fake > real thì kết luận là Fake
-            is_fake = fake_prob > real_prob
-            
-            # Độ tự tin (Confidence) là giá trị lớn nhất (đã nhân 100%)
-            confidence = max(real_prob, fake_prob) * 100
+        result = response.json()
+        real_prob = result["real_prob"]
+        fake_prob = result["fake_prob"]
+        
+        is_fake = fake_prob > real_prob
+        confidence = max(real_prob, fake_prob) * 100
         
         return jsonify({
             "is_fake": is_fake,
             "confidence": round(confidence, 2),
             "status": "success"
         }), 200
+        
+    except requests.exceptions.ConnectionError:
+        return jsonify({"message": "Cannot connect to AI Microservice (Port 8000). Is it running?"}), 500
     except Exception as e:
-        return jsonify({"message": f"AI Error: {str(e)}"}), 500
+        return jsonify({"message": f"Error: {str(e)}"}), 500
 
 def add_review():
     data = request.get_json()

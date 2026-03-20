@@ -20,9 +20,10 @@ Full-stack e-commerce platform featuring:
 ## Tech Stack
 | Backend | Frontend | Database | AI/ML |
 |---------|----------|----------|-------|
-| Flask, SQLAlchemy | React 18, Context API | PostgreSQL | BERT (transformers), PyTorch, SVM (sklearn), NLTK |
-| Flask-JWT-Extended, SocketIO | Tailwind CSS, Axios | | Joblib, Pandas, NumPy |
-| Eventlet (async), CORS | | | Accelerate |
+| Flask 3.0, SQLAlchemy 3.1 | React 19, Vite 8, Context API | PostgreSQL 15+ | BERT (transformers 4.35), PyTorch 2.1, SVM (sklearn 1.3), NLTK |
+| Flask-JWT-Extended 4.6, SocketIO 5.3 | Tailwind 3.4, Axios 1.13, Socket.IO Client | psycopg2 2.9 | joblib 1.3, pandas 2.1, numpy 1.26, accelerate 0.27+ |
+| Eventlet 0.33 (async), CORS 4.0 | React Router 7, Recharts, Lucide React | | |
+
 
 ## Prerequisites
 - Python 3.10+
@@ -52,9 +53,9 @@ python run.py
 ```bash
 cd frontend
 npm install
-npm start
+npm run dev
 ```
-- App: http://localhost:3000
+- App: http://localhost:3000 (Vite dev server)
 
 ### 4. AI Model Setup (Optional)
 - SVM Training: `cd backend/ai && python train_svm.py`

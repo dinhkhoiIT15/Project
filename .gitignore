@@ -5,6 +5,7 @@ __pycache__/
 *.pyc
 
 backend/ai/bert_fake_review_model/
+backend/ai/bert_onnx_model/
 
 # Bỏ qua file chứa mật khẩu/cấu hình bí mật
 .env
@@ -13,3 +14,4 @@ backend/ai/bert_fake_review_model/
 project_structure.md
 Context.md
 TODO.md
+README.md
