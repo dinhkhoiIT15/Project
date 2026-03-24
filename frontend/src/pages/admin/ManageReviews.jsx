@@ -9,9 +9,13 @@ import {
   EyeOff,
   Eye,
   CheckCircle,
+<<<<<<< HEAD
   X,
   CloudUpload,
   CloudDownload
+=======
+  X
+>>>>>>> 8b47f6a9682f99293e5b12efd14163589c288dda
 } from "lucide-react";
 import Pagination from "../../components/common/Pagination";
 import useManageReviews from "../../hooks/admin/useManageReviews";
@@ -46,6 +50,7 @@ const ManageReviews = () => {
     confirmDelete,
     toggleHide,
     handleAccept,
+<<<<<<< HEAD
     handlePushData,
     handlePullModel,
     isPushing,
@@ -54,6 +59,8 @@ const ManageReviews = () => {
     showProgress,
     pullProgress,
     showPullProgress
+=======
+>>>>>>> 8b47f6a9682f99293e5b12efd14163589c288dda
   } = useManageReviews();
 
   return (
