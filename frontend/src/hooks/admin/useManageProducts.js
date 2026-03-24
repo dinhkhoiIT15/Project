@@ -11,9 +11,12 @@ const useManageProducts = () => {
     category_id: "",
     stock_quantity: "0",
     image_url: "",
+    keywords: "",      // MỚI
+    description: "",   // MỚI
   });
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false); // MỚI
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -67,6 +70,8 @@ const useManageProducts = () => {
       category_id: p.category_id.toString(),
       stock_quantity: p.stock_quantity.toString(),
       image_url: p.image_url || "",
+      keywords: "",
+      description: p.description || "",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -106,7 +111,34 @@ const useManageProducts = () => {
       category_id: "",
       stock_quantity: "0",
       image_url: "",
+      keywords: "",
+      description: "",
     });
+  };
+
+  // MỚI: Hàm gọi AI sinh mô tả
+  const handleGenerateDescription = async () => {
+    if (!formData.name || !formData.category_id) {
+      addToast("Please enter Product Name and select a Category first", "error");
+      return;
+    }
+    setIsGenerating(true);
+    addToast("AI is thinking... This might take a few seconds", "info");
+    try {
+      const selectedCategory = categories.find(c => c.category_id.toString() === formData.category_id.toString());
+      
+      const res = await api.post("/products/generate-description", {
+        name: formData.name,
+        category_name: selectedCategory?.name || "",
+        keywords: formData.keywords
+      });
+      setFormData(prev => ({ ...prev, description: res.data.description }));
+      addToast("Description generated successfully!", "success");
+    } catch (err) {
+      addToast(err.response?.data?.message || "Failed to generate description", "error");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return {
@@ -126,6 +158,7 @@ const useManageProducts = () => {
     handleEdit,
     handleSubmit,
     resetForm,
+    handleGenerateDescription
   };
 };
 

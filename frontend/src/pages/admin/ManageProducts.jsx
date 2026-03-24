@@ -32,6 +32,8 @@ const ManageProducts = () => {
     handleEdit,
     handleSubmit,
     resetForm,
+    handleGenerateDescription,
+    isGenerating,
   } = useManageProducts();
 
   return (
@@ -110,6 +112,49 @@ const ManageProducts = () => {
                   ))}
                 </select>
               </div>
+
+              {/* MỚI: Khung AI Auto Generate */}
+              <div className="space-y-3 p-3 bg-[#f6f8fa] border border-[#d0d7de] rounded-md">
+                <Input
+                  label="Keywords / Features (Optional)"
+                  placeholder="e.g. OLED screen, 12h battery..."
+                  value={formData.keywords}
+                  onChange={(e) =>
+                    setFormData({ ...formData, keywords: e.target.value })
+                  }
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  fullWidth 
+                  onClick={handleGenerateDescription}
+                  disabled={isGenerating}
+                  className="flex justify-center items-center text-[#0969da] border-[#0969da] hover:bg-blue-50"
+                >
+                  {isGenerating ? (
+                     <div className="w-4 h-4 border-2 border-[#0969da] border-t-transparent rounded-full animate-spin mr-2" />
+                  ) : (
+                     <Sparkles size={16} className="mr-2" />
+                  )}
+                  {isGenerating ? "AI is generating..." : "✨ Auto Generate Description"}
+                </Button>
+              </div>
+
+              {/* MỚI: Textarea cho Description */}
+              <div className="flex flex-col mb-4">
+                <label className="mb-1.5 text-xs font-bold text-[#1f2328] uppercase">
+                  Description (HTML Supported)
+                </label>
+                <textarea
+                  className="px-3 py-2 border border-[#d0d7de] rounded-md text-sm bg-white outline-none focus:border-[#0969da] min-h-[140px] resize-y"
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  required
+                />
+              </div>
+
               <Input
                 label="Image URL"
                 value={formData.image_url}

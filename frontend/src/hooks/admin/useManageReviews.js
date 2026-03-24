@@ -19,7 +19,6 @@ const useManageReviews = () => {
   const [testResult, setTestResult] = useState(null);
   const [testLoading, setTestLoading] = useState(false);
 
-<<<<<<< HEAD
   const [isPushing, setIsPushing] = useState(false);
   const [isPulling, setIsPulling] = useState(false);
 
@@ -29,8 +28,6 @@ const useManageReviews = () => {
   const [pullProgress, setPullProgress] = useState(0);
   const [showPullProgress, setShowPullProgress] = useState(false);
 
-=======
->>>>>>> 8b47f6a9682f99293e5b12efd14163589c288dda
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [reviewToDelete, setReviewToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -159,7 +156,6 @@ const useManageReviews = () => {
     }
   };
 
-<<<<<<< HEAD
   const handlePushData = async () => {
     setIsPushing(true);
     addToast("Pushing data to Colab. Please wait...", "info"); // Hiện Toast báo đang tải lên
@@ -213,8 +209,6 @@ const useManageReviews = () => {
     }
   };
 
-=======
->>>>>>> 8b47f6a9682f99293e5b12efd14163589c288dda
   return {
     reviews,
     loading,
@@ -244,15 +238,12 @@ const useManageReviews = () => {
     confirmDelete,
     toggleHide,
     handleAccept,
-<<<<<<< HEAD
     handlePushData,
     handlePullModel,
     pushProgress,
     showProgress,
     pullProgress,
     showPullProgress
-=======
->>>>>>> 8b47f6a9682f99293e5b12efd14163589c288dda
   };
 };
 

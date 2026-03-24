@@ -23,7 +23,7 @@ def create_app():
     CORS(app) 
     
     app.config.from_object(Config)
-    app.config['JWT_SECRET_KEY'] = 'my-secret-ecommerce-ai-key-2024'
+    app.config['JWT_SECRET_KEY'] = 'my_super_secret_key_for_project_2026_secured'
     db.init_app(app)
 
     jwt = JWTManager(app)
