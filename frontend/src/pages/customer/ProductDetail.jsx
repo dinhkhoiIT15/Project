@@ -296,19 +296,48 @@ const ProductDetail = () => {
                     <h1 className="text-2xl font-black text-[#1f2328] leading-tight">
                       {product?.name}
                     </h1>
-                    <div className="flex items-center gap-1 text-[#0969da]">
-                      <span className="text-xs font-bold uppercase">
+                    {/* MỚI: Hiển thị Category, Brand và SKU */}
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <span className="text-xs font-bold uppercase text-[#0969da] bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
                         {product?.category_name}
                       </span>
+                      {product?.brand && (
+                        <span className="text-xs font-bold uppercase text-[#1f2328] border border-[#d0d7de] bg-white px-2 py-0.5 rounded-md">
+                          {product?.brand}
+                        </span>
+                      )}
+                      {product?.sku && (
+                        <span className="text-[11px] font-mono text-[#6e7781] px-1">
+                          SKU: {product?.sku}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <button className="p-2 border border-[#d0d7de] rounded-md hover:bg-red-50 hover:text-red-500 transition-colors">
                     <Heart size={20} />
                   </button>
                 </div>
-                <span className="text-3xl font-black text-[#1f2328] mt-2">
-                  ${product?.price.toFixed(2)}
-                </span>
+                
+                {/* MỚI: Hiển thị Giá giảm và Giá gốc */}
+                <div className="flex items-end gap-3 mt-2">
+                  {product?.discount_price ? (
+                    <>
+                      <span className="text-3xl font-black text-[#cf222e]">
+                        ${product?.discount_price.toFixed(2)}
+                      </span>
+                      <span className="text-lg font-bold text-[#6e7781] line-through mb-1">
+                        ${product?.price.toFixed(2)}
+                      </span>
+                      <span className="text-xs font-bold text-[#cf222e] bg-[#ffebe9] px-2 py-1 rounded-md mb-2">
+                        Save ${(product?.price - product?.discount_price).toFixed(2)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-3xl font-black text-[#1f2328]">
+                      ${product?.price?.toFixed(2)}
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="flex flex-col gap-1 py-4 border-y border-[#d0d7de]">
@@ -356,9 +385,11 @@ const ProductDetail = () => {
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-bold">Stock Status</span>
                   <span
-                    className={`font-bold ${product?.stock_quantity > 0 ? "text-green-600" : "text-red-500"}`}
+                    className={`font-bold ${!product?.is_active ? "text-[#cf222e]" : product?.stock_quantity > 0 ? "text-[#1a7f37]" : "text-[#cf222e]"}`}
                   >
-                    {product?.stock_quantity > 0
+                    {!product?.is_active 
+                      ? "Currently Unavailable" 
+                      : product?.stock_quantity > 0
                       ? `${product.stock_quantity} available`
                       : "Out of Stock"}
                   </span>
@@ -370,15 +401,16 @@ const ProductDetail = () => {
                   fullWidth
                   onClick={handleAddToCart}
                   isLoading={addingToCart}
-                  disabled={product?.stock_quantity <= 0}
+                  disabled={product?.stock_quantity <= 0 || !product?.is_active}
                   className="py-3 text-base font-black shadow-sm"
                 >
-                  Add to cart
+                  {product?.stock_quantity <= 0 || !product?.is_active ? "Unavailable" : "Add to cart"}
                 </Button>
                 <Button
                   fullWidth
                   variant="outline"
                   className="py-3 text-base font-bold bg-[#f6f8fa]"
+                  disabled={product?.stock_quantity <= 0 || !product?.is_active}
                   onClick={() => {
                     handleAddToCart();
                     setTimeout(() => navigate("/cart"), 500);
@@ -391,6 +423,23 @@ const ProductDetail = () => {
                 </p>
               </div>
             </div>
+
+            {/* MỚI: Bảng Thông số kỹ thuật */}
+            {product?.specifications && Object.keys(product.specifications).length > 0 && (
+              <div className="flex flex-col gap-3 mb-6">
+                <h3 className="text-lg font-bold text-[#1f2328] border-b border-[#d0d7de] pb-2">
+                  Specifications
+                </h3>
+                <div className="flex flex-col border border-[#d0d7de] rounded-lg overflow-hidden text-sm">
+                  {Object.entries(product.specifications).map(([key, value], index) => (
+                    <div key={key} className={`flex ${index % 2 === 0 ? 'bg-[#f6f8fa]' : 'bg-white'} border-b border-[#d0d7de] last:border-0`}>
+                      <div className="w-1/3 p-3 font-bold text-[#1f2328] border-r border-[#d0d7de] break-words">{key}</div>
+                      <div className="w-2/3 p-3 text-[#6e7781] break-words">{value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-col gap-3">
               <h3 className="text-lg font-bold text-[#1f2328] border-b border-[#d0d7de] pb-2">

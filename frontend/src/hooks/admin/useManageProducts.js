@@ -13,6 +13,11 @@ const useManageProducts = () => {
     image_url: "",
     keywords: "",      // MỚI
     description: "",   // MỚI
+    sku: "",
+    brand: "",
+    discount_price: "",
+    is_active: true,
+    specifications: {}, // Đổi thành dạng Object
   });
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -72,18 +77,50 @@ const useManageProducts = () => {
       image_url: p.image_url || "",
       keywords: "",
       description: p.description || "",
+      sku: p.sku || "",
+      brand: p.brand || "",
+      discount_price: p.discount_price ? p.discount_price.toString() : "",
+      is_active: p.is_active ?? true,
+      specifications: p.specifications || {}, // Gán trực tiếp Object từ DB
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // --- MỚI: CÁC HÀM QUẢN LÝ SPECIFICATIONS ---
+  const handleAddSpec = (key) => {
+    setFormData(prev => ({
+      ...prev,
+      specifications: { ...prev.specifications, [key]: "" }
+    }));
+  };
+
+  const handleUpdateSpec = (key, value) => {
+    setFormData(prev => ({
+      ...prev,
+      specifications: { ...prev.specifications, [key]: value }
+    }));
+  };
+
+  const handleRemoveSpec = (key) => {
+    setFormData(prev => {
+      const newSpecs = { ...prev.specifications };
+      delete newSpecs[key];
+      return { ...prev, specifications: newSpecs };
+    });
+  };
+  // ------------------------------------------
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
     const payload = {
       ...formData,
       price: parseFloat(formData.price),
       category_id: parseInt(formData.category_id),
       stock_quantity: parseInt(formData.stock_quantity),
+      discount_price: formData.discount_price ? parseFloat(formData.discount_price) : null,
+      specifications: formData.specifications // Truyền thẳng Object
     };
 
     try {
@@ -113,6 +150,11 @@ const useManageProducts = () => {
       image_url: "",
       keywords: "",
       description: "",
+      sku: "",
+      brand: "",
+      discount_price: "",
+      is_active: true,
+      specifications: {}, // Đổi thành dạng Object
     });
   };
 
@@ -130,7 +172,8 @@ const useManageProducts = () => {
       const res = await api.post("/products/generate-description", {
         name: formData.name,
         category_name: selectedCategory?.name || "",
-        keywords: formData.keywords
+        keywords: formData.keywords,
+        specifications: formData.specifications // MỚI: Truyền thêm thông số kỹ thuật cho AI
       });
       setFormData(prev => ({ ...prev, description: res.data.description }));
       addToast("Description generated successfully!", "success");
@@ -158,7 +201,11 @@ const useManageProducts = () => {
     handleEdit,
     handleSubmit,
     resetForm,
-    handleGenerateDescription
+    handleGenerateDescription,
+    isGenerating, // Thêm isGenerating để tránh lỗi bên giao diện
+    handleAddSpec,
+    handleUpdateSpec,
+    handleRemoveSpec
   };
 };
 

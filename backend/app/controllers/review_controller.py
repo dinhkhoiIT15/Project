@@ -58,33 +58,33 @@ def is_gibberish(text):
     return False
 
 def is_irrelevant_comment(content, product_name, category_name):
-    """Check if the review is irrelevant or off-topic for the product."""
+    """Phát hiện bình luận lạc đề (Áp dụng chuyên cho shop Công nghệ/Điện tử)."""
     content_lower = content.lower()
     
-    # 1. Blacklist of keywords from other categories (can be expanded)
-    # Example: If selling a Phone, but the comment contains words related to Clothing, Home Appliances...
+    # 1. Tập trung blacklist cho đồ công nghệ
+    # VD: Mua bàn phím nhưng khen camera nét, mua đồ công nghệ nhưng khen vải đẹp, son môi, thức ăn ngon...
     wrong_context_keywords = {
-        'phone': ['shirt', 'pants', 'shoes', 'fridge', 'kitchen', 'keyboard', 'mouse'],
-        'laptop': ['shirt', 'pants', 'phone', 'lipstick', 'sunscreen'],
-        'clothing': ['battery', 'screen', 'keyboard', 'specs', 'ram', 'ssd']
+        'phone': ['shirt', 'pants', 'shoes', 'lipstick', 'sunscreen', 'food', 'delicious', 'switch', 'keycap'],
+        'laptop': ['shirt', 'pants', 'lipstick', 'sunscreen', 'food', 'delicious'],
+        'keyboard_mouse': ['screen size', 'camera', 'lens', 'megapixel', 'shirt', 'pants', 'shoes'],
+        'general_tech': ['shirt', 'pants', 'shoes', 'lipstick', 'food', 'delicious', 'vải', 'áo', 'quần', 'ngon']
     }
     
-    # Determine the current product category (based on category_name or product_name)
-    current_context = ""
-    if category_name:
-        cat_lower = category_name.lower()
-        if 'phone' in cat_lower or 'mobile' in cat_lower: 
-            current_context = 'phone'
-        elif 'laptop' in cat_lower or 'computer' in cat_lower: 
-            current_context = 'laptop'
-        elif 'cloth' in cat_lower or 'apparel' in cat_lower: 
-            current_context = 'clothing'
+    current_context = "general_tech"
+    # Dùng cả category_name và product_name để bắt ngữ cảnh chính xác hơn
+    combined_text = f"{category_name} {product_name}".lower() if category_name or product_name else ""
+    
+    if 'phone' in combined_text or 'mobile' in combined_text or 'điện thoại' in combined_text: 
+        current_context = 'phone'
+    elif 'laptop' in combined_text or 'computer' in combined_text or 'máy tính' in combined_text: 
+        current_context = 'laptop'
+    elif 'keyboard' in combined_text or 'mouse' in combined_text or 'bàn phím' in combined_text or 'chuột' in combined_text: 
+        current_context = 'keyboard_mouse'
             
-    # If the product context is identified, check if the comment contains irrelevant keywords
     if current_context in wrong_context_keywords:
         for wrong_word in wrong_context_keywords[current_context]:
             if wrong_word in content_lower:
-                return True  # Clearly irrelevant!
+                return True  # Đánh dấu là Lạc đề (Irrelevant)!
 
     return False
 

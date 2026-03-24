@@ -19,18 +19,33 @@ const ProductCard = ({ product, onAddToCart }) => {
           alt={product.name}
         />
 
-        {product.stock_quantity <= 0 && (
+        {/* MỚI: Ưu tiên hiện nhãn Unavailable -> Out of Stock -> Sale */}
+        {product.is_active === false ? (
+          <div className="absolute top-2 right-2 bg-[#6e7781] text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase z-10">
+            Unavailable
+          </div>
+        ) : product.stock_quantity <= 0 ? (
           <div className="absolute top-2 right-2 bg-[#cf222e] text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase z-10">
             Out of Stock
           </div>
-        )}
+        ) : product.discount_price ? (
+          <div className="absolute top-2 right-2 bg-[#cf222e] text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase z-10 shadow-sm">
+            Sale -{Math.round((1 - product.discount_price / product.price) * 100)}%
+          </div>
+        ) : null}
       </Link>
 
       <div className="flex w-full flex-col items-start gap-4 px-4 py-5 flex-grow">
-        <div className="flex w-full items-start gap-1 min-h-[40px]">
+        {/* MỚI: Hiển thị thêm Brand */}
+        <div className="flex w-full flex-col items-start gap-1.5 min-h-[50px]">
+          {product.brand && (
+            <span className="text-[9px] uppercase font-bold text-[#6e7781] bg-[#f6f8fa] border border-[#d0d7de] px-1.5 py-0.5 rounded-sm">
+              {product.brand}
+            </span>
+          )}
           <Link
             to={`/product/${product.product_id}`}
-            className="grow shrink-0 basis-0"
+            className="w-full"
           >
             <span
               className="text-sm font-bold text-[#1f2328] line-clamp-2 group-hover:text-[#0969da] transition-colors leading-snug"
@@ -46,9 +61,21 @@ const ProductCard = ({ product, onAddToCart }) => {
             <span className="line-clamp-1 w-full text-[10px] font-bold text-[#6e7781] uppercase tracking-wider">
               Price
             </span>
-            <span className="line-clamp-1 w-full text-sm font-black text-[#1f2328]">
-              ${product.price.toFixed(2)}
-            </span>
+            {/* MỚI: Xử lý hiển thị Giá giảm */}
+            {product.discount_price ? (
+              <div className="flex flex-col">
+                <span className="line-clamp-1 w-full text-sm font-black text-[#cf222e]">
+                  ${product.discount_price.toFixed(2)}
+                </span>
+                <span className="line-clamp-1 w-full text-[10px] font-semibold text-[#6e7781] line-through">
+                  ${product.price.toFixed(2)}
+                </span>
+              </div>
+            ) : (
+              <span className="line-clamp-1 w-full text-sm font-black text-[#1f2328]">
+                ${product.price.toFixed(2)}
+              </span>
+            )}
           </div>
           <div className="flex grow shrink-0 basis-0 flex-col items-start gap-1">
             <span className="line-clamp-1 w-full text-[10px] font-bold text-[#6e7781] uppercase tracking-wider">
@@ -65,11 +92,11 @@ const ProductCard = ({ product, onAddToCart }) => {
             onClick={() => onAddToCart(product.product_id)}
             fullWidth
             variant="outline"
-            disabled={product.stock_quantity <= 0}
+            disabled={product.stock_quantity <= 0 || product.is_active === false}
             className="py-2 text-[11px] font-bold border-[#d0d7de] hover:bg-[#f6f8fa] h-9"
           >
             <ShoppingCart className="w-3.5 h-3.5 mr-2" />
-            Add to Cart
+            {product.stock_quantity <= 0 || product.is_active === false ? "Unavailable" : "Add to Cart"}
           </Button>
         </div>
       </div>

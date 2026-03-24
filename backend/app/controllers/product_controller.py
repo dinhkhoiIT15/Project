@@ -14,9 +14,17 @@ def generate_description_api():
     name = data.get('name')
     category_name = data.get('category_name')
     keywords = data.get('keywords', '')
+    specifications = data.get('specifications', {}) # MỚI: Nhận dữ liệu specs
 
     if not name or not category_name:
         return jsonify({"message": "Product name and category are required"}), 400
+
+    # MỚI: Xử lý Dict thông số kỹ thuật thành chuỗi dễ đọc cho AI (VD: "RAM: 8GB, CPU: Core i5")
+    specs_str = ""
+    if isinstance(specifications, dict) and specifications:
+        specs_list = [f"{k}: {v}" for k, v in specifications.items() if str(v).strip()]
+        if specs_list:
+            specs_str = ", ".join(specs_list)
 
     load_dotenv()
     HF_TOKEN = os.getenv("HF_TOKEN")
@@ -27,22 +35,27 @@ def generate_description_api():
         "Content-Type": "application/json"
     }
 
-    # PROMPT SIÊU NGẮN VÀ CẤM NHẮC ĐẾN CODE
-    prompt = f"""You are a professional copywriter.
-Write a short, simple, plain text product description for:
-- Product: {name}
+    # PROMPT CHUẨN SEO, TỰ NHIÊN VÀ ĐA DẠNG PHONG CÁCH
+    prompt = f"""You are an expert E-commerce SEO copywriter.
+Write a highly engaging, natural, and professional plain text product description in Vietnamese for:
+- Product Name: {name}
 - Category: {category_name}
-- Features: {keywords}
+- Highlighted Features: {keywords}
+- Key Specifications: {specs_str}
 
-Strict rule: Write maximum 3 short sentences. Only return normal words, no special formatting characters."""
+Requirements:
+1. Language: MUST be in English.
+2. Length: Maximum 4 sentences (under 200 words). Make it concise but impactful.
+3. Content & Style: Seamlessly weave the specifications and features into a natural, persuasive narrative. Do NOT just list them mechanically. Use a dynamic and attractive tone suitable for tech products to boost SEO.
+4. Format: Return ONLY pure plain text. Absolutely NO HTML tags, NO markdown (like ** or *), NO bullet points, and NO conversational filler."""
 
     payload = {
-        "model": "Qwen/Qwen2.5-7B-Instruct", # Dùng bản 7B cho tốc độ phản hồi cực nhanh
+        "model": "Qwen/Qwen2.5-7B-Instruct", 
         "messages": [
             {"role": "user", "content": prompt}
         ],
-        "max_tokens": 100,
-        "temperature": 0.7
+        "max_tokens": 250,  # Tăng lên 250 để AI thoải mái viết tối đa 200 từ mà không bị ngắt quãng
+        "temperature": 0.8  # Tăng temperature một chút (từ 0.7 lên 0.8) để văn phong AI đa dạng, sáng tạo và tự nhiên hơn
     }
 
     try:
@@ -96,7 +109,13 @@ def get_all_products():
             "stock_quantity": p.stock_quantity,
             "category_id": p.category_id,
             "category_name": category_name or "General",
-            "image_url": p.image_url
+            "image_url": p.image_url,
+            # MỚI THÊM
+            "sku": p.sku,
+            "brand": p.brand,
+            "discount_price": p.discount_price,
+            "is_active": p.is_active,
+            "specifications": p.specifications
         })
     
     return jsonify({
@@ -131,7 +150,13 @@ def get_product_by_id(product_id):
             "category_name": cat_name or "Uncategorized",
             "image_url": p.image_url,
             "avg_rating": round(avg_rating, 1),
-            "review_count": len(reviews)
+            "review_count": len(reviews),
+            # MỚI THÊM
+            "sku": p.sku,
+            "brand": p.brand,
+            "discount_price": p.discount_price,
+            "is_active": p.is_active,
+            "specifications": p.specifications
         },
         "status": "success"
     }), 200
@@ -151,7 +176,13 @@ def create_product():
             description=description,
             stock_quantity=int(data.get('stock_quantity', 0)),
             category_id=int(data.get('category_id')),
-            image_url=data.get('image_url', '')
+            image_url=data.get('image_url', ''),
+            # MỚI THÊM
+            sku=data.get('sku', ''),
+            brand=data.get('brand', ''),
+            specifications=data.get('specifications', {}),
+            discount_price=float(data.get('discount_price')) if data.get('discount_price') else None,
+            is_active=data.get('is_active', True)
         )
         db.session.add(new_product)
         db.session.commit()
@@ -178,6 +209,13 @@ def update_product(product_id):
         if 'image_url' in data: product.image_url = data['image_url']
         if 'category_id' in data: product.category_id = int(data['category_id'])
         if 'description' in data: product.description = data['description']
+        # MỚI THÊM
+        if 'sku' in data: product.sku = data['sku']
+        if 'brand' in data: product.brand = data['brand']
+        if 'specifications' in data: product.specifications = data['specifications']
+        if 'discount_price' in data: 
+            product.discount_price = float(data['discount_price']) if data['discount_price'] else None
+        if 'is_active' in data: product.is_active = data['is_active']
 
         db.session.commit()
         socketio.emit('product_list_updated')

@@ -28,6 +28,13 @@ class Product(db.Model):
     stock_quantity = db.Column(db.Integer, default=0)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.category_id'))
     image_url = db.Column(db.Text)
+    
+    # --- MỚI THÊM: Quản lý & Bán hàng đồ Công nghệ ---
+    sku = db.Column(db.String(100), unique=True)        # Mã vạch/Mã SP (VD: IPHONE-15-PRO)
+    brand = db.Column(db.String(100))                   # Thương hiệu (VD: Apple, Samsung, Logitech)
+    specifications = db.Column(db.JSON)                 # Thông số kỹ thuật (RAM, CPU, Switch bàn phím...)
+    discount_price = db.Column(db.Float, nullable=True) # Giá khuyến mãi
+    is_active = db.Column(db.Boolean, default=True)     # Trạng thái ẩn/hiện sản phẩm (Không cần xóa hẳn)
 
 class Review(db.Model):
     __tablename__ = 'reviews'
