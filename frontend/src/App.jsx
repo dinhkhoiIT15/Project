@@ -1,15 +1,10 @@
-import React, { useEffect } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-  useLocation,
-  useNavigate, // MỚI: Thêm useNavigate
-} from "react-router-dom";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ToastProvider } from "./context/ToastContext.jsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
 import { CartProvider } from "./context/CartContext.jsx";
+
+// Pages & Components
 import Home from "./pages/customer/Home";
 import AdminLayout from "./components/layout/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
@@ -27,27 +22,38 @@ import ManageReviews from "./pages/admin/ManageReviews";
 import OrderDetail from "./pages/customer/OrderDetail";
 import ManageUsers from "./pages/admin/ManageUsers";
 
+// Hook khởi tạo
+import { useAppInit } from "./hooks/app/useAppInit";
+
+/**
+ * Route bảo vệ cho khách hàng (Yêu cầu đăng nhập)
+ */
+const PrivateRoute = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? (
+    children
+  ) : (
+    <Navigate to="/" state={{ openLogin: true }} replace />
+  );
+};
+
+/**
+ * Route bảo vệ cho Admin (Yêu cầu quyền Admin)
+ */
+const AdminRoute = ({ children }) => {
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated)
+    return <Navigate to="/" state={{ openLogin: true }} replace />;
+  if (user?.role !== "Admin") return <Navigate to="/" replace />;
+  return children;
+};
+
+/**
+ * Cấu trúc chính của ứng dụng
+ */
+
 const AppContent = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const isAdminPath = location.pathname.startsWith("/admin");
-
-  const { loading, isAuthenticated, user } = useAuth();
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [location.pathname]);
-
-  useEffect(() => {
-    if (
-      !loading &&
-      isAuthenticated &&
-      user?.role === "Admin" &&
-      location.pathname === "/"
-    ) {
-      navigate("/admin", { replace: true });
-    }
-  }, [loading, isAuthenticated, user, location.pathname, navigate]);
+  const { loading, isAdminPath } = useAppInit();
 
   if (loading)
     return (
@@ -60,66 +66,19 @@ const AppContent = () => {
     <div className="min-h-screen flex flex-col bg-background text-gray-800 font-sans">
       <div className="flex-grow">
         <Routes>
+          {/* --- CUSTOMER ROUTES --- */}
           <Route path="/" element={<Home />} />
           <Route path="/product/:id" element={<ProductDetail />} />
-          <Route
-            path="/cart"
-            element={
-              <PrivateRoute>
-                <Cart />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/checkout"
-            element={
-              <PrivateRoute>
-                <Checkout />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/my-orders"
-            element={
-              <PrivateRoute>
-                <MyOrders />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/order/:id"
-            element={
-              <PrivateRoute>
-                <OrderDetail />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <PrivateRoute>
-                <Profile />
-              </PrivateRoute>
-            }
-          />
+          
+          <Route path="/cart" element={<PrivateRoute><Cart /></PrivateRoute>} />
+          <Route path="/checkout" element={<PrivateRoute><Checkout /></PrivateRoute>} />
+          <Route path="/my-orders" element={<PrivateRoute><MyOrders /></PrivateRoute>} />
+          <Route path="/order/:id" element={<PrivateRoute><OrderDetail /></PrivateRoute>} />
+          <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+          <Route path="/my-reviews" element={<PrivateRoute><MyReviews /></PrivateRoute>} />
 
-          <Route
-            path="/my-reviews"
-            element={
-              <PrivateRoute>
-                <MyReviews />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/admin"
-            element={
-              <AdminRoute>
-                <AdminLayout />
-              </AdminRoute>
-            }
-          >
+          {/* --- ADMIN ROUTES --- */}
+          <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
             <Route index element={<Dashboard />} />
             <Route path="categories" element={<ManageCategories />} />
             <Route path="products" element={<ManageProducts />} />
@@ -127,28 +86,14 @@ const AppContent = () => {
             <Route path="reviews" element={<ManageReviews />} />
             <Route path="users" element={<ManageUsers />} />
           </Route>
+
+          {/* Điều hướng mặc định nếu sai đường dẫn */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
       {!isAdminPath && <Footer />}
     </div>
   );
-};
-
-const PrivateRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? (
-    children
-  ) : (
-    <Navigate to="/" state={{ openLogin: true }} replace />
-  );
-};
-
-const AdminRoute = ({ children }) => {
-  const { isAuthenticated, user } = useAuth();
-  if (!isAuthenticated)
-    return <Navigate to="/" state={{ openLogin: true }} replace />;
-  if (user?.role !== "Admin") return <Navigate to="/" replace />;
-  return children;
 };
 
 function App() {

@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from "react";
-import api from "../../services/api";
-import { useToast } from "../../context/ToastContext";
+import React from "react";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import {
   MessageSquare,
@@ -10,156 +8,53 @@ import {
   Star,
   EyeOff,
   Eye,
-  CheckCircle, // MỚI: Thêm icon cho tab Real
-  X
+  CheckCircle,
+  X,
+  CloudUpload,
+  CloudDownload
 } from "lucide-react";
-import { io } from "socket.io-client"; // MỚI: Import socket
 import Pagination from "../../components/common/Pagination";
+import useManageReviews from "../../hooks/admin/useManageReviews";
 
 const ManageReviews = () => {
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("real"); // MỚI: State quản lý tab hiện tại
-
-  const [filterProductId, setFilterProductId] = useState("");
-  const [filterUsername, setFilterUsername] = useState("");
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const { addToast } = useToast();
-
-  // MỚI: Các biến State phục vụ cho Test AI
-  const [testContent, setTestContent] = useState("");
-  const [testResult, setTestResult] = useState(null);
-  const [testLoading, setTestLoading] = useState(false);
-
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [reviewToDelete, setReviewToDelete] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const [isContextModalOpen, setIsContextModalOpen] = useState(false);
-  const [contextData, setContextData] = useState(null);
-  const [contextLoading, setContextLoading] = useState(false);
-
-  const handleOpenContext = async (productId) => {
-    setIsContextModalOpen(true);
-    setContextLoading(true);
-    try {
-      const res = await api.get(`/reviews/admin/product-context/${productId}`);
-      setContextData(res.data);
-    } catch (err) {
-      addToast("Failed to load product context", "error");
-      setIsContextModalOpen(false);
-    } finally {
-      setContextLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchReviews();
-  }, [filterProductId, filterUsername, currentPage, activeTab]); // MỚI: Thêm activeTab vào dependencies
-
-  // MỚI: Lắng nghe socket để auto reload danh sách
-  useEffect(() => {
-    const socket = io("http://localhost:5000"); // Đổi port nếu backend của bạn chạy port khác
-    socket.on("review_list_updated", () => {
-      fetchReviews();
-    });
-    return () => socket.disconnect();
-  }, [currentPage, activeTab, filterProductId, filterUsername]);
-
-  const fetchReviews = async () => {
-    const token = sessionStorage.getItem("token");
-    if (!token) {
-      addToast("Admin session expired. Please login again.", "error");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await api.get("/reviews/admin/all", {
-        params: {
-          product_id: filterProductId || undefined,
-          username: filterUsername || undefined,
-          page: currentPage,
-          tab: activeTab, // MỚI: Truyền tab xuống backend
-        },
-      });
-      setReviews(res.data.reviews || []);
-      setTotalPages(res.data.total_pages || 1);
-    } catch (err) {
-      if (
-        err.response?.status === 401 ||
-        err.response?.data?.msg?.includes("Authorization")
-      ) {
-        addToast("Your admin session is invalid. Please re-login.", "error");
-      } else {
-        addToast("Failed to load reviews list", "error");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleTestAI = async () => {
-    if (!testContent.trim()) {
-      addToast("Please enter a review to test", "warning");
-      return;
-    }
-    setTestLoading(true);
-    setTestResult(null);
-    try {
-      const res = await api.post("/reviews/test-ai", { content: testContent });
-      setTestResult(res.data);
-    } catch (err) {
-      // Ưu tiên hiển thị thông báo lỗi chi tiết từ Backend gửi về
-      const errorMsg =
-        err.response?.data?.message ||
-        "Test failed. Check if AI model is loaded.";
-      addToast(errorMsg, "error");
-    } finally {
-      setTestLoading(false);
-    }
-  };
-
-  const handleDeleteClick = (id) => {
-    setReviewToDelete(id);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    setIsDeleting(true);
-    try {
-      await api.delete(`/reviews/${reviewToDelete}`);
-      addToast("Review deleted and user notified", "success");
-      fetchReviews();
-    } catch (err) {
-      addToast("Failed to delete review", "error");
-    } finally {
-      setIsDeleting(false);
-      setIsDeleteDialogOpen(false);
-    }
-  };
-
-  const toggleHide = async (id) => {
-    try {
-      await api.put(`/reviews/${id}/hide`);
-      addToast("Visibility updated", "success");
-      fetchReviews();
-    } catch (err) {
-      addToast("Update failed", "error");
-    }
-  };
-
-  const handleAccept = async (id) => {
-    try {
-      await api.put(`/reviews/${id}/accept`);
-      addToast("Review accepted as real", "success");
-      fetchReviews();
-    } catch (err) {
-      addToast("Accept failed", "error");
-    }
-  };
+  const {
+    reviews,
+    loading,
+    activeTab,
+    setActiveTab,
+    filterProductId,
+    setFilterProductId,
+    filterUsername,
+    setFilterUsername,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    testContent,
+    setTestContent,
+    testResult,
+    testLoading,
+    isDeleteDialogOpen,
+    setIsDeleteDialogOpen,
+    isDeleting,
+    isContextModalOpen,
+    setIsContextModalOpen,
+    contextData,
+    contextLoading,
+    handleOpenContext,
+    handleTestAI,
+    handleDeleteClick,
+    confirmDelete,
+    toggleHide,
+    handleAccept,
+    handlePushData,
+    handlePullModel,
+    isPushing,
+    isPulling,
+    pushProgress,
+    showProgress,
+    pullProgress,
+    showPullProgress
+  } = useManageReviews();
 
   return (
     <div className="p-6">
@@ -168,7 +63,43 @@ const ManageReviews = () => {
           <MessageSquare className="text-[#0969da]" /> Manage Reviews
         </h1>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={handlePushData}
+            disabled={isPushing}
+            className="flex items-center gap-2 px-4 py-2 bg-[#1a7f37] hover:bg-green-700 text-white text-sm font-bold rounded-md shadow-sm transition-colors disabled:opacity-50 min-w-[180px] justify-center"
+          >
+            {isPushing ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Pushing...
+              </>
+            ) : (
+              <>
+                <CloudUpload size={16} />
+                Push Data to Colab
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={handlePullModel}
+            disabled={isPulling}
+            className="flex items-center gap-2 px-4 py-2 bg-[#0969da] hover:bg-blue-700 text-white text-sm font-bold rounded-md shadow-sm transition-colors disabled:opacity-50 min-w-[170px] justify-center"
+          >
+            {isPulling ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Downloading...
+              </>
+            ) : (
+              <>
+                <CloudDownload size={16} />
+                Sync Latest Model
+              </>
+            )}
+          </button>
+
           <div className="relative">
             <Search
               className="absolute left-3 top-2.5 text-[#6e7781]"
@@ -502,6 +433,50 @@ const ManageReviews = () => {
         type="danger"
         isLoading={isDeleting}
       />
+
+      {/* MỚI: Tiến trình đẩy dữ liệu lên Hugging Face hiển thị ở góc phải dưới */}
+      {showProgress && (
+        <div className="fixed bottom-6 right-6 bg-white border border-[#d0d7de] p-4 rounded-lg shadow-2xl w-80 z-[9999] animate-slide-in-right">
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-sm font-bold text-[#1f2328] flex items-center gap-2">
+              <CloudUpload size={16} className="text-[#1a7f37]" />
+              Pushing Data...
+            </span>
+            <span className="text-sm font-bold text-[#1a7f37]">{pushProgress}%</span>
+          </div>
+          <div className="w-full bg-[#eaeef2] rounded-full h-3">
+            <div
+              className="bg-[#1a7f37] h-3 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${pushProgress}%` }}
+            ></div>
+          </div>
+          <p className="text-[11px] text-[#6e7781] mt-2 italic">
+            Uploading new_feedback_data.csv to Hugging Face
+          </p>
+        </div>
+      )}
+
+      {/* MỚI: Tiến trình tải Model (Sync) hiển thị ở góc phải dưới (Màu xanh dương) */}
+      {showPullProgress && (
+        <div className="fixed bottom-6 right-6 bg-white border border-[#d0d7de] p-4 rounded-lg shadow-2xl w-80 z-[9999] animate-slide-in-right">
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-sm font-bold text-[#1f2328] flex items-center gap-2">
+              <CloudDownload size={16} className="text-[#0969da]" />
+              Syncing Model...
+            </span>
+            <span className="text-sm font-bold text-[#0969da]">{pullProgress}%</span>
+          </div>
+          <div className="w-full bg-[#eaeef2] rounded-full h-3">
+            <div
+              className="bg-[#0969da] h-3 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${pullProgress}%` }}
+            ></div>
+          </div>
+          <p className="text-[11px] text-[#6e7781] mt-2 italic">
+            Downloading bert_onnx_model from Hugging Face
+          </p>
+        </div>
+      )}
     </div>
   );
 };

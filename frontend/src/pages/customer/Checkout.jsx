@@ -1,122 +1,23 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React from "react";
 import Navbar from "../../components/layout/Navbar";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
-import api from "../../services/api";
-import { useToast } from "../../context/ToastContext";
-import { useCart } from "../../context/CartContext";
-// MỚI: Import thêm các icon trạng thái và io socket
 import { ShieldCheck, Truck, Clock, CheckCircle2, XCircle } from "lucide-react";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
-import { io } from "socket.io-client";
+import useCheckout from "../../hooks/customer/useCheckout";
 
 const Checkout = () => {
-  const navigate = useNavigate();
-  const { addToast } = useToast();
-  const { fetchCartCount } = useCart();
-  const [address, setAddress] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  // MỚI: Các State quản lý luồng chờ xác nhận đơn hàng
-  const [placedOrderId, setPlacedOrderId] = useState(null);
-  const [orderStatus, setOrderStatus] = useState("pending");
-  const [countdown, setCountdown] = useState(60); // Đếm ngược 60 giây
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await api.get("/user/profile");
-        if (res.data.user.address) setAddress(res.data.user.address);
-      } catch (err) {
-        console.error("Profile fetch error:", err);
-      }
-    };
-    fetchProfile();
-  }, []);
-
-  // MỚI: Lắng nghe Socket để biết Admin đã xác nhận chưa + Quản lý đếm ngược
-  useEffect(() => {
-    if (!placedOrderId) return;
-
-    const socket = io("http://localhost:5000");
-
-    // Nếu admin update trạng thái, tắt ngay nút Hủy và báo thành công
-    socket.on("order_status_changed", (data) => {
-      if (data.order_id === placedOrderId) {
-        setOrderStatus(data.new_status);
-        if (data.new_status !== "pending" && data.new_status !== "cancelled") {
-          addToast(
-            `Shop has updated your order to: ${data.new_status}`,
-            "info",
-          );
-        }
-      }
-    });
-
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0; // Hết giờ
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      socket.disconnect();
-      clearInterval(timer);
-    };
-  }, [placedOrderId]);
-
-  const handleCheckout = async (e) => {
-    e.preventDefault();
-    if (!address) {
-      addToast("Shipping address is required!", "error");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await api.post("/orders/checkout", {
-        shipping_address: address,
-        payment_method: "COD",
-      });
-
-      addToast("Order placed! Waiting for shop confirmation.", "success");
-      fetchCartCount();
-
-      // MỚI: Thay vì nhảy trang, ta lưu lại ID đơn hàng để hiện màn hình chờ
-      setPlacedOrderId(res.data.order_id);
-      setOrderStatus("pending");
-      setCountdown(60);
-    } catch (err) {
-      const errorMsg =
-        err.response?.data?.message || "Order failed. Please try again.";
-      addToast(errorMsg, "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // MỚI: Hàm xử lý khi User bấm Hủy đơn hàng
-  const handleUserCancel = async () => {
-    try {
-      await api.put(`/orders/${placedOrderId}/cancel`);
-      addToast("Order cancelled. Items returned to your cart.", "info");
-      setOrderStatus("cancelled");
-      fetchCartCount(); // Load lại số lượng giỏ hàng trên Navbar
-
-      // Tự động quay về giỏ hàng sau 2 giây
-      setTimeout(() => navigate("/cart"), 2000);
-    } catch (err) {
-      addToast(
-        "Cannot cancel order. Shop might have already confirmed it.",
-        "error",
-      );
-    }
-  };
+  const {
+    address,
+    setAddress,
+    loading,
+    placedOrderId,
+    orderStatus,
+    countdown,
+    handleCheckout,
+    handleUserCancel,
+    navigate,
+  } = useCheckout();
 
   // MỚI: Giao diện Màn hình chờ xác nhận (Hiển thị khi đã đặt hàng thành công)
   if (placedOrderId) {

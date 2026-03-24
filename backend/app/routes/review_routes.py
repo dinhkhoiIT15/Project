@@ -11,7 +11,9 @@ from app.controllers.review_controller import (
     test_ai_review,       # MỚI: Import API Test
     toggle_hide_review,
     accept_review,        # MỚI: Import API Accept
-    admin_get_product_context
+    admin_get_product_context,
+    push_data_to_hf,
+    pull_model_from_hf
 )
 from app.utils.decorators import admin_required
 from app.controllers.review_controller import toggle_hide_review
@@ -22,15 +24,14 @@ review_bp = Blueprint('review_bp', __name__)
 review_bp.route('/api/reviews', methods=['POST'])(jwt_required()(add_review))
 review_bp.route('/api/reviews/fake', methods=['GET'])(admin_required()(get_fake_reviews))
 review_bp.route('/api/reviews/<int:review_id>', methods=['DELETE'])(admin_required()(delete_review))
-
 review_bp.route('/api/reviews/my-reviews', methods=['GET'])(jwt_required()(get_user_reviews))
 review_bp.route('/api/reviews/admin/all', methods=['GET'])(admin_required()(admin_get_all_reviews))
 review_bp.route('/api/reviews/<int:review_id>/hide', methods=['PUT'])(admin_required()(toggle_hide_review))
 review_bp.route('/api/reviews/test-ai', methods=['POST'])(admin_required()(test_ai_review))
 review_bp.route('/api/reviews/<int:review_id>/accept', methods=['PUT'])(admin_required()(accept_review))
-
+review_bp.route('/api/reviews/admin/push-data', methods=['POST'])(admin_required()(push_data_to_hf))
+review_bp.route('/api/reviews/admin/pull-model', methods=['POST'])(admin_required()(pull_model_from_hf))
 review_bp.route('/api/reviews/product/<int:product_id>', methods=['GET'])(get_product_reviews)
-
 review_bp.route('/api/reviews/<int:review_id>', methods=['PUT'])(jwt_required()(update_review))
 review_bp.route('/api/reviews/user/<int:review_id>', methods=['DELETE'])(jwt_required()(user_delete_review))
 review_bp.route('/api/reviews/admin/product-context/<int:product_id>', methods=['GET'])(admin_required()(admin_get_product_context))

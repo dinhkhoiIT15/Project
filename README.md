@@ -1,99 +1,100 @@
-# AI-Powered E-Commerce Platform with Fake Review Detection
+# E-Commerce Platform with AI Fake Review Detection 🚀
 
 ## Overview
-Full-stack e-commerce platform featuring:
-- Customer shopping (products, cart, checkout, orders, reviews)
-- Admin dashboard (manage users, products, categories, orders, reviews)
-- **AI Fake Review Detection** using BERT (transformers/PyTorch) for inference and SVM (scikit-learn) for training
-- Real-time updates via SocketIO
+Full-stack e-commerce application with Vietnamese language support and **AI-powered fake review detection**. 
+Detects fake/spam reviews using SVM and fine-tuned BERT models with >95% accuracy on Vietnamese datasets.
 
-## Features
-- JWT Authentication & Authorization
-- CRUD for Products/Categories/Orders/Users/Reviews
-- Shopping Cart & Checkout (COD)
-- Review system with purchase verification
-- **AI detects fake reviews** (>60% confidence hidden, 30-60% flagged)
-- Admin review moderation (hide/accept/delete)
-- Real-time notifications & review updates
-- Responsive React frontend with Tailwind CSS
+**Backend**: Flask API + PostgreSQL + SocketIO realtime notifications
+**Frontend**: React 19 + Vite + TailwindCSS + Recharts dashboard
 
-## Tech Stack
-| Backend | Frontend | Database | AI/ML |
-|---------|----------|----------|-------|
-| Flask 3.0, SQLAlchemy 3.1 | React 19, Vite 8, Context API | PostgreSQL 15+ | BERT (transformers 4.35), PyTorch 2.1, SVM (sklearn 1.3), NLTK |
-| Flask-JWT-Extended 4.6, SocketIO 5.3 | Tailwind 3.4, Axios 1.13, Socket.IO Client | psycopg2 2.9 | joblib 1.3, pandas 2.1, numpy 1.26, accelerate 0.27+ |
-| Eventlet 0.33 (async), CORS 4.0 | React Router 7, Recharts, Lucide React | | |
+## ✨ Features
+### Customer
+- Browse products by category
+- Shopping cart & checkout (COD support)
+- Submit reviews/ratings
+- Order history & tracking
+- User profile management
 
+### Admin
+- Dashboard with analytics (Recharts)
+- Manage users, products, categories, orders
+- **AI Review Moderation**: Auto-detect fake/irrelevant reviews with confidence scores
+- Realtime notifications (SocketIO)
 
-## Prerequisites
-- Python 3.10+
-- Node.js 18+
-- PostgreSQL 15+ (create DB: `ecommerce_db`, user: `postgres` / pass: `postgres`)
-- Git
+### AI Features
+- **Fake Review Detection**: SVM + BERT/ONNX models
+- Vietnamese-specific training data
+- Labels reviews as `fake`, `irrelevant` with `confidence_score`
+- Admin can hide/approve reviews
 
-## Quick Start
-
-### 1. Clone & Setup
-```bash
-git clone <repo-url>
-cd Project
+## 🛠 Tech Stack
+```
+Backend: Flask 3.0 | SQLAlchemy | PostgreSQL | JWT | SocketIO
+AI/ML: PyTorch | Transformers | scikit-learn | ONNX
+Frontend: React 19 | Vite | TailwindCSS | React Router | SocketIO-client
 ```
 
-### 2. Backend Setup
+## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.10+
+- Node.js 20+
+- PostgreSQL 15+ (create DB named `ecommerce_ai`)
+
+### 1. Backend Setup
 ```bash
 cd backend
 pip install -r requirements.txt
-# Edit config.py or .env for DB if needed
+cp .env.example .env  # Configure DATABASE_URL, JWT_SECRET_KEY
 python run.py
 ```
-- API Server: http://localhost:5000
-- Default Admin: `admin` / `admin123`
+Backend runs on `http://localhost:5000`
 
-### 3. Frontend Setup
+**Default Admin**: `admin` / `admin123`
+
+### 2. Frontend Setup
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-- App: http://localhost:3000 (Vite dev server)
+Frontend runs on `http://localhost:5173`
 
-### 4. AI Model Setup (Optional)
-- SVM Training: `cd backend/ai && python train_svm.py`
-- BERT: Pre-trained weights in `backend/ai/bert_fake_review_model/`
-
-## Database Setup
-```sql
--- Connect to PostgreSQL
-CREATE DATABASE ecommerce_db;
+### 3. AI Model Training (Optional)
+```bash
+cd backend/ai
+# SVM Model
+python train_svm.py
+# BERT Model  
+python train_bert.py
 ```
-Uses `postgresql://postgres:postgres@localhost:5432/ecommerce_db` (edit `backend/config.py`)
 
-Auto-migrates tables on first run.
+## 🌐 API Documentation
+- `/api/docs` (Auto-generated Swagger if enabled)
+- JWT Auth: `/auth/login`, `/auth/register`
+- Products: `/products`, `/products/<id>`
+- Reviews: `/reviews`, `/reviews/ai/analyze` (AI endpoint)
 
-## API Usage
-Base URL: `http://localhost:5000`
-- Auth: POST `/register`, `/login`
-- Products: GET/POST `/products`
-- Reviews: POST `/reviews` (AI auto-detects fakes)
-- See controllers/routes for full endpoints.
+## 🗄 Database Schema
+```mermaid
+erDiagram
+    User ||--o{ Cart : has
+    User ||--o{ Order : places
+    Order ||--o{ OrderDetail : contains
+    Product ||--o{ Review : has
+    Category ||--o{ Product : contains
+    Review {
+        int review_id PK
+        boolean is_fake
+        float confidence_score
+    }
+```
 
-## Admin Panel
-- Login as admin
-- Manage all entities
-- Moderate fake reviews (confidence scores shown)
+## 🤝 Contributing
+1. Fork & clone
+2. `black .` (format)
+3. `flake8` (lint)
+4. PR to `main`
 
-## Troubleshooting
-- **SocketIO issues**: Ensure eventlet installed
-- **BERT load fail**: Check `backend/ai/bert_fake_review_model/` exists
-- **DB connection**: Verify PostgreSQL running, credentials correct
-- **CORS**: Frontend 3000 <-> Backend 5000 allowed
-
-## Development
-- Backend hot-reload: `python run.py` (debug=True)
-- Frontend: `npm start`
-- Train new SVM: `backend/ai/train_svm.py`
-- Review AI tests: `/test-ai-review` endpoint
-
-## License
+## 📄 License
 MIT
-

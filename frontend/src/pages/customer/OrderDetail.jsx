@@ -1,55 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import React from "react";
+import { Link } from "react-router-dom";
 import Navbar from "../../components/layout/Navbar";
-import { io } from "socket.io-client";
-import api from "../../services/api";
 import { Clock, MapPin, CreditCard, Package, ArrowLeft } from "lucide-react";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
+import useOrderDetail from "../../hooks/customer/useOrderDetail";
 
 const OrderDetail = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [order, setOrder] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchOrderDetail = async () => {
-      try {
-        const res = await api.get(`/orders/${id}`);
-        setOrder(res.data.order);
-      } catch (err) {
-        console.error("Failed to load order details", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchOrderDetail();
-  }, [id]);
-
-  useEffect(() => {
-    let isMounted = true;
-    const socket = io("http://localhost:5000");
-
-    socket.on("order_status_changed", (data) => {
-      if (!isMounted) return;
-
-      setOrder((prevOrder) => {
-        if (prevOrder && String(prevOrder.order_id) === String(data.order_id)) {
-          return {
-            ...prevOrder,
-            order_status: data.order_status,
-            payment_status: data.payment_status,
-          };
-        }
-        return prevOrder;
-      });
-    });
-
-    return () => {
-      isMounted = false;
-      if (socket) socket.disconnect();
-    };
-  }, [id]);
+  const { order, loading, navigate } = useOrderDetail();
 
   if (loading)
     return (

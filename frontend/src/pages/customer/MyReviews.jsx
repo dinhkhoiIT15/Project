@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../../components/layout/Navbar";
-import api from "../../services/api";
 import {
   MessageSquare,
   Star,
@@ -12,71 +11,26 @@ import {
   Check,
 } from "lucide-react";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
-import { useToast } from "../../context/ToastContext";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
+import useMyReviews from "../../hooks/customer/useMyReviews";
 
 const MyReviews = () => {
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { addToast } = useToast();
-
-  const [editingId, setEditingId] = useState(null);
-  const [editContent, setEditContent] = useState("");
-  const [editRating, setEditRating] = useState(5);
-
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [reviewToDelete, setReviewToDelete] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    fetchMyReviews();
-  }, []);
-
-  const fetchMyReviews = async () => {
-    try {
-      const res = await api.get("/reviews/my-reviews");
-      setReviews(res.data.reviews || []);
-    } catch (err) {
-      console.error("Failed to fetch reviews", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpdateReview = async (reviewId) => {
-    try {
-      await api.put(`/reviews/${reviewId}`, {
-        content: editContent,
-        rating: editRating,
-      });
-      addToast("Review updated successfully", "success");
-      setEditingId(null);
-      fetchMyReviews();
-    } catch (err) {
-      addToast("Failed to update review", "error");
-    }
-  };
-
-  const handleDeleteClick = (reviewId) => {
-    setReviewToDelete(reviewId);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const confirmDeleteReview = async () => {
-    if (!reviewToDelete) return;
-    setIsDeleting(true);
-    try {
-      await api.delete(`/reviews/user/${reviewToDelete}`);
-      addToast("Review deleted", "success");
-      fetchMyReviews();
-    } catch (err) {
-      addToast("Failed to delete review", "error");
-    } finally {
-      setIsDeleting(false);
-      setIsDeleteDialogOpen(false);
-      setReviewToDelete(null);
-    }
-  };
+  const {
+    reviews,
+    loading,
+    editingId,
+    setEditingId,
+    editContent,
+    setEditContent,
+    editRating,
+    setEditRating,
+    isDeleteDialogOpen,
+    setIsDeleteDialogOpen,
+    isDeleting,
+    handleUpdateReview,
+    handleDeleteClick,
+    confirmDeleteReview,
+  } = useMyReviews();
 
   return (
     <div className="min-h-screen bg-white text-[#1f2328] font-sans">

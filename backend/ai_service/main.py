@@ -4,6 +4,9 @@ import onnxruntime as ort
 from transformers import BertTokenizer
 import numpy as np
 import os
+import threading
+from huggingface_hub import HfApi
+from dotenv import load_dotenv
 
 app = FastAPI()
 
@@ -30,6 +33,20 @@ async def startup_event():
         print("✅ ONNX Model loaded successfully and is ready!")
     except Exception as e:
         print(f"❌ Error loading model: {e}")
+
+# MỚI: API Endpoint để nạp lại model nóng (Hot Reload) vào RAM
+@app.post("/reload")
+async def reload_model():
+    global tokenizer, ort_session
+    print("🔄 Request received: Reloading AI Model from disk into memory...")
+    try:
+        tokenizer = BertTokenizer.from_pretrained(MODEL_DIR)
+        ort_session = ort.InferenceSession(MODEL_PATH)
+        print("✅ ONNX Model RELOADED successfully and applied instantly!")
+        return {"status": "success", "message": "Model reloaded into memory"}
+    except Exception as e:
+        print(f"❌ Error reloading model: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 class ReviewRequest(BaseModel):
     content: str
@@ -62,3 +79,41 @@ async def predict(request: ReviewRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+def push_initial_model_to_hf():
+    """
+    Kiểm tra và đẩy model local lên Hugging Face lần đầu tiên.
+    Nếu trên mây đã có model (đã được Colab train và đẩy lên) thì sẽ tự động bỏ qua để không ghi đè.
+    """
+
+    load_dotenv()
+    HF_TOKEN = os.getenv("HF_TOKEN")
+    REPO_ID = "dinhkhoi1501/fake-review-model"
+    
+    try:
+        api = HfApi()
+        print("☁️ Checking Hugging Face for existing model...")
+        
+        # Lấy danh sách các file hiện có trên Repo Hugging Face
+        existing_files = api.list_repo_files(repo_id=REPO_ID, repo_type="model", token=HF_TOKEN)
+        
+        # Kiểm tra xem 'model.onnx' đã tồn tại chưa
+        if "model.onnx" not in existing_files:
+            print("☁️ No model found on Cloud. Uploading initial local ONNX model...")
+            api.upload_folder(
+                folder_path=MODEL_DIR,
+                path_in_repo=".",
+                repo_id=REPO_ID,
+                repo_type="model",
+                token=HF_TOKEN
+            )
+            print("✅ Initial model uploaded successfully to Hugging Face!")
+        else:
+            print("☁️ Model already exists on Hugging Face (possibly retrained). Skipping upload.")
+            
+    except Exception as e:
+        print(f"❌ Failed to sync with Hugging Face: {e}")
+
+# Chạy hàm đẩy model trong một luồng riêng (Background Thread) 
+# để không làm chậm quá trình khởi động của server FastAPI
+threading.Thread(target=push_initial_model_to_hf, daemon=True).start()

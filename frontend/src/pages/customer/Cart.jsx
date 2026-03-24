@@ -1,56 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../../components/layout/Navbar";
 import Button from "../../components/common/Button";
-import api from "../../services/api";
-import { useToast } from "../../context/ToastContext";
-import { useCart } from "../../context/CartContext";
 import { ShoppingCart, CreditCard, ArrowLeft } from "lucide-react";
 import CartItem from "../../components/cart/CartItem";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
+import useCartPage from "../../hooks/customer/useCartPage";
 
 const Cart = () => {
-  const [cart, setCart] = useState({ cart_items: [], total_price: 0 });
-  const [loading, setLoading] = useState(true);
-  const { addToast } = useToast();
-  const { fetchCartCount } = useCart();
-
-  useEffect(() => {
-    fetchCart();
-  }, []);
-
-  const fetchCart = async () => {
-    try {
-      const res = await api.get("/cart");
-      setCart(res.data);
-      fetchCartCount();
-    } catch (err) {
-      addToast("Failed to load your cart", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpdateQty = async (itemId, newQty) => {
-    if (newQty < 1) return;
-    try {
-      await api.put(`/cart/${itemId}`, { quantity: newQty });
-      fetchCart();
-      addToast("Cart updated successfully!", "success");
-    } catch (err) {
-      addToast("Failed to update quantity", "error");
-    }
-  };
-
-  const handleRemove = async (itemId) => {
-    try {
-      await api.delete(`/cart/${itemId}`);
-      fetchCart();
-      addToast("Item has been removed from your cart", "info");
-    } catch (err) {
-      addToast("Failed to remove item", "error");
-    }
-  };
+  const { cart, loading, handleUpdateQty, handleRemove } = useCartPage();
 
   if (loading)
     return (

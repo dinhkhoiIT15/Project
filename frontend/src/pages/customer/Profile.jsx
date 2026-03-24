@@ -1,91 +1,26 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Navbar from "../../components/layout/Navbar";
 import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
-import api from "../../services/api";
-import { useToast } from "../../context/ToastContext";
-import { User, Lock, Eye, EyeOff } from "lucide-react"; // MỚI: Import thêm Eye và EyeOff
+import { User, Lock, Eye, EyeOff } from "lucide-react";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
+import useProfile from "../../hooks/customer/useProfile";
 
 const Profile = () => {
-  const [activeTab, setActiveTab] = useState("profile");
-  const [profileData, setProfileData] = useState({
-    username: "",
-    phone_number: "",
-    address: "",
-  });
-  const [loading, setLoading] = useState(false);
-
-  // MỚI: State cho form đổi mật khẩu (Mặc định trống trơn)
-  const [passwords, setPasswords] = useState({ old: "", new: "", confirm: "" });
-  const [showPassword, setShowPassword] = useState(false);
-  const [passLoading, setPassLoading] = useState(false);
-
-  const { addToast } = useToast();
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await api.get("/user/profile");
-        setProfileData({
-          username: res.data.user.username,
-          phone_number: res.data.user.phone_number || "",
-          address: res.data.user.address || "",
-        });
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchProfile();
-  }, []);
-
-  const handleProfileUpdate = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await api.put("/user/profile", {
-        phone_number: profileData.phone_number,
-        address: profileData.address,
-      });
-      addToast("Profile updated!", "success");
-    } catch (err) {
-      addToast("Error updating profile", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // MỚI: Hàm xử lý Đổi mật khẩu
-  const handlePasswordUpdate = async (e) => {
-    e.preventDefault();
-
-    // Kiểm tra mật khẩu mới và xác nhận có khớp nhau không ngay tại Frontend
-    if (passwords.new !== passwords.confirm) {
-      addToast("New passwords do not match!", "error");
-      return;
-    }
-
-    setPassLoading(true);
-    try {
-      // Giả định bạn đã có endpoint này ở Backend (trong user_controller.py)
-      await api.put("/user/change-password", {
-        old_password: passwords.old,
-        new_password: passwords.new,
-      });
-      addToast("Password updated successfully!", "success");
-
-      // Xóa trắng các ô input sau khi đổi thành công
-      setPasswords({ old: "", new: "", confirm: "" });
-      setShowPassword(false);
-    } catch (err) {
-      addToast(
-        err.response?.data?.message || "Error updating password",
-        "error",
-      );
-    } finally {
-      setPassLoading(false);
-    }
-  };
+  const {
+    activeTab,
+    setActiveTab,
+    profileData,
+    setProfileData,
+    loading,
+    passwords,
+    setPasswords,
+    showPassword,
+    setShowPassword,
+    passLoading,
+    handleProfileUpdate,
+    handlePasswordUpdate,
+  } = useProfile();
 
   return (
     <div className="min-h-screen bg-white">

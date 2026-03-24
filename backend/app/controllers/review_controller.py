@@ -3,12 +3,42 @@ from app.models.models import db, Review, Product, Order, OrderDetail, User, Not
 from flask_jwt_extended import get_jwt_identity
 from datetime import datetime
 from app.extensions import socketio
+from huggingface_hub import snapshot_download, HfApi
 import os
 import re
 import requests
+import csv # MỚI THÊM
+from dotenv import load_dotenv
+
+
+# MỚI: Kích hoạt lõi truyền tải siêu tốc độ (Rust) của Hugging Face
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
 
 # Địa chỉ của AI Microservice đang chạy ở cổng 8000
 AI_SERVICE_URL = "http://127.0.0.1:8000/predict"
+
+# MỚI: Hàm ghi nối dữ liệu vào file new_feedback_data.csv
+def append_to_feedback_csv(text, label):
+    try:
+        csv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../ai/new_feedback_data.csv'))
+        file_exists = os.path.isfile(csv_path)
+        
+        # Xóa ký tự xuống dòng để tránh lỗi file CSV
+        clean_text = str(text).replace('\n', ' ').replace('\r', '').strip()
+        
+        with open(csv_path, mode='a', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            # Nếu file chưa tồn tại hoặc trống, tạo dòng tiêu đề
+            if not file_exists or os.stat(csv_path).st_size == 0:
+                writer.writerow(['text', 'label'])
+            # Ghi nội dung và nhãn (1: Fake/Xóa, 0: Real/Chấp nhận)
+            writer.writerow([clean_text, label])
+    except Exception as e:
+        print(f"⚠️ Error writing to CSV: {e}")
+
+load_dotenv()  # Tải biến môi trường từ file .env
+HF_TOKEN = os.getenv("HF_TOKEN")
+HF_REPO = "dinhkhoi1501/fake-review-model"
 
 def is_gibberish(text):
     """Phát hiện chuỗi vô nghĩa, quảng cáo hoặc link tào lao."""
@@ -303,6 +333,9 @@ def delete_review(review_id):
         product_id = review.product_id
         user_id = review.user_id
         
+        # MỚI: Lưu comment bị xóa vào Data Train với nhãn 1 (Fake/Spam)
+        append_to_feedback_csv(review.content, 1)
+        
         notif = Notification(
             user_id=user_id,
             order_id=0, 
@@ -345,6 +378,9 @@ def toggle_hide_review(review_id):
 def accept_review(review_id):
     review = Review.query.get(review_id)
     if not review: return jsonify({"message": "Review not found"}), 404
+    
+    # MỚI: Lưu comment được duyệt vào Data Train với nhãn 0 (Real)
+    append_to_feedback_csv(review.content, 0)
     
     review.is_fake = False
     review.is_hidden = False  # Đảm bảo nó được hiển thị
@@ -457,3 +493,69 @@ def admin_get_product_context(product_id):
         "reviews": result_reviews,
         "status": "success"
     }), 200
+
+def push_data_to_hf():
+    """Đẩy file new_feedback_data.csv lên HF và xóa sạch data local"""
+    try:
+        print("☁️ [API] Request received: Pushing new feedback data to Hugging Face...")
+        api = HfApi()
+        csv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../ai/new_feedback_data.csv'))
+        
+        # Kiểm tra file tồn tại và có dung lượng > 0 hay không
+        if not os.path.exists(csv_path) or os.stat(csv_path).st_size == 0:
+            print("⚠️ No data found to push.")
+            return jsonify({"status": "error", "message": "No new feedback data found to push"}), 400
+            
+        print(f"📤 Uploading dataset to Hugging Face...")
+        api.upload_file(
+            path_or_fileobj=csv_path,
+            path_in_repo="new_feedback_data.csv",
+            repo_id=HF_REPO,
+            repo_type="model",
+            token=HF_TOKEN
+        )
+        print("✅ Upload complete! Clearing local file...")
+        
+        # MỚI: Xóa trắng file nội dung, chỉ giữ lại tiêu đề cột
+        with open(csv_path, mode='w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(['text', 'label'])
+            
+        print("🧹 Local data cleared. Ready to collect new feedbacks.")
+        return jsonify({"status": "success", "message": "Data successfully pushed! Local file cleared."}), 200
+    except Exception as e:
+        print(f"❌ Push failed: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+def pull_model_from_hf():
+    """Tải model ONNX mới nhất từ Hugging Face về và tự động reload AI Microservice"""
+    try:
+        print("☁️ [API] Request received: Pulling latest model from Hugging Face...")
+        model_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../ai/bert_onnx_model'))
+        os.makedirs(model_dir, exist_ok=True)
+        
+        print(f"📥 Downloading files to: {model_dir}")
+        snapshot_download(
+            repo_id=HF_REPO,
+            local_dir=model_dir,
+            token=HF_TOKEN,
+            ignore_patterns=["*.csv", "*.pkl"] 
+        )
+        print("✅ Download complete! Latest model synced successfully.")
+        
+        # MỚI: Gửi request ép AI Microservice nạp lại model từ ổ cứng vào RAM
+        try:
+            print("🔄 Triggering Hot-Reload on AI Microservice...")
+            reload_url = AI_SERVICE_URL.replace('/predict', '/reload')
+            response = requests.post(reload_url, timeout=10)
+            if response.status_code == 200:
+                print("✅ AI Microservice has successfully applied the new model!")
+            else:
+                print(f"⚠️ AI Microservice returned status: {response.status_code}")
+        except Exception as req_err:
+            print(f"⚠️ Could not auto-reload AI Service. Is it running? Error: {req_err}")
+
+        return jsonify({"status": "success", "message": "Latest AI Model synced and applied instantly!"}), 200
+    except Exception as e:
+        print(f"❌ Download failed: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500

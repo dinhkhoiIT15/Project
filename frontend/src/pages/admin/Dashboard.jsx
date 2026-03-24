@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   Users,
   Package,
@@ -7,9 +7,7 @@ import {
   AlertTriangle,
   Clock,
 } from "lucide-react";
-import api from "../../services/api";
 import { Link } from "react-router-dom";
-import { io } from "socket.io-client";
 import {
   LineChart,
   Line,
@@ -25,43 +23,14 @@ import {
   Label,
 } from "recharts";
 
+// Import Custom Hook
+import useDashboard from "../../hooks/admin/useDashboard";
+
 const COLORS = ["#0969da", "#1a7f37", "#bf3989", "#cf222e", "#8250df"];
 
 const Dashboard = () => {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, [refreshKey]);
-
-  useEffect(() => {
-    const socket = io("http://localhost:5000");
-
-    const handleRefresh = () => {
-      setRefreshKey((prev) => prev + 1);
-    };
-
-    socket.on("new_order_placed", handleRefresh);
-    socket.on("order_status_changed", handleRefresh);
-    socket.on("product_list_updated", handleRefresh);
-    socket.on("user_list_updated", handleRefresh);
-    socket.on("review_list_updated", handleRefresh);
-
-    return () => socket.disconnect();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      const res = await api.get("/dashboard/stats");
-      setData(res.data);
-    } catch (error) {
-      console.error("Failed to fetch dashboard data", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Sử dụng logic từ Custom Hook chỉ với 1 dòng
+  const { data, loading } = useDashboard();
 
   if (loading)
     return (

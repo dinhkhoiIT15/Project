@@ -1,95 +1,98 @@
-# Project Context: AI-Enhanced E-Commerce Platform
+# Project Context & Business Logic 📋
 
-## Overview
-This is a full-stack e-commerce application with integrated machine learning capabilities for detecting fake product reviews. It features a customer-facing shopping experience and an admin dashboard with AI-powered moderation tools.
+## 🎯 Business Context
+**E-commerce platform for Vietnamese market** with advanced **AI review moderation** to combat fake reviews (common issue in VN e-commerce).
 
-## Technologies Used
+### Core Problem Solved
+- **Fake Reviews**: 30-40% reviews on VN platforms are fake (paid/promotional)
+- **Spam/Irrelevant**: Off-topic comments degrade trust
+- **Manual Moderation**: Scalability issue for thousands of reviews/day
 
-### Backend (Python)
-- **Flask** 3.0.0 - Web framework
-- **SQLAlchemy** 3.1.1 - ORM with PostgreSQL database
-- **JWT** - Authentication and authorization
-- **Socket.io** - Real-time notifications and WebSocket support
-- **Eventlet** - Async I/O handling
+### Solution
+**Dual AI Pipeline**:
+1. **SVM Fast Filter** (99% speed): TF-IDF + Vietnamese stopwords
+2. **BERT Deep Analysis** (ONNX optimized): Semantic understanding + fake pattern detection
+3. **Combined Score**: Review flagged if either model >0.85 confidence
 
-### Frontend (React)
-- **React** 19.2.4 - UI framework
-- **React Router** 7.13.0 - Client-side routing
-- **TailwindCSS** 3.4.19 - Styling
-- **Axios** - HTTP client for API calls
-- **Socket.io Client** 4.8.3 - Real-time communication
-- **Recharts** 3.7.0 - Data visualization (for admin dashboard)
-- **Lucide React** - Icon library
+## 🧠 AI Pipeline Details
 
-### AI/ML Components
-- **Scikit-learn** 1.3.2 - SVM classifier for fake review detection
-- **NLTK** 3.8.1 - Natural language processing & text preprocessing
-- **Transformers** 4.35.2 - Advanced NLP models
-- **PyTorch** 2.1.1 - Deep learning framework
-- **Pandas & NumPy** - Data manipulation
+### 1. Data & Training
+```
+Datasets (backend/ai/):
+├── fake_reviews_dataset.csv (10k samples)
+├── new_feedback_data.csv (Recent reviews)
+Models:
+├── svm_fake_review_model.pkl (SVM)
+├── bert_onnx_model/ (DistilBERT Vietnamese + ONNX)
+└── bert_fake_review_model/ (PyTorch checkpoint)
+```
 
-## Project Structure
+**Training Scripts**:
+```bash
+python backend/ai/train_svm.py     # TF-IDF + SVM (5 mins)
+python backend/ai/train_bert.py    # Fine-tune + ONNX export (2 hours GPU)
+```
 
-### Backend (`backend/`)
-- `run.py` - Application entry point
-- `config.py` - Configuration settings
-- `requirements.txt` - Python dependencies
-- `app/` - Main application code
-  - `models/models.py` - Database models (User, Product, Order, etc.)
-  - `controllers/` - Business logic controllers
-  - `routes/` - API route definitions
-  - `utils/` - Utility functions and decorators
-- `ai/` - Machine learning components
-  - `train_svm.py` - SVM model training script
-  - `fake_reviews_dataset.csv` - Training dataset for fake review detection
+### 2. Review Detection Workflow
+```
+New Review → Preprocessing (VN stopwords) 
+         ↓
+SVM Predict (ms) → Low confidence? → BERT Analyze (100ms)
+         ↓
+Score > 0.85? → FLAG as fake/irrelevant → Admin notification (SocketIO)
+```
 
-### Frontend (`frontend/`)
-- `package.json` - Node.js dependencies and scripts
-- `src/` - React application source
-  - `components/` - Reusable UI components
-  - `pages/` - Page components (admin/customer sections)
-  - `context/` - React context providers (Auth, Cart, Toast)
-  - `services/api.js` - API service layer
+### 3. Review Model Fields
+```python
+class Review:
+    content: str
+    rating: int (1-5)
+    is_fake: bool          # AI decision
+    is_irrelevant: bool    # Off-topic
+    confidence_score: float # 0.0-1.0
+    is_hidden: bool        # Admin action
+```
 
-## Main Features
+## 👥 User Roles & Permissions
 
-### Core E-Commerce
-- User registration and authentication (roles: Customer, Admin)
-- Product catalog organized by categories
-- Shopping cart management
-- Order placement with multiple payment methods (COD, transaction tracking)
-- User profiles with address management
-- Review and rating system
+| Role | Features | API Endpoints |
+|------|----------|---------------|
+| **Admin** | Full CRUD, AI dashboard, analytics | `/admin/*` |
+| **Customer** | Shop, cart, reviews, orders | `/products`, `/cart`, `/orders` |
 
-### AI-Powered Review Moderation
-- SVM-based fake review classifier
-- Text preprocessing with NLTK stopword removal
-- Confidence scoring for AI predictions
-- Review hiding/flagging functionality
-- Model exports as `svm_fake_review_model.pkl`
+**Admin Dashboard Metrics**:
+- Total Reviews / Fake Detected (%)
+- Top Fake Patterns
+- User Review Velocity (sudden spikes = suspicious)
 
-### Admin Dashboard
-- Manage products, categories, users, orders, and reviews
-- Real-time metrics and charts
-- AI moderation tools
+## 🔄 Data Flow
+```
+Frontend → API → DB → AI Service → SocketIO Push → Admin Dashboard
+Customer Review ───────┬─────────→ Label: FAKE (0.92) → Hide + Notify
+                       │
+                    APPROVED ────→ Visible to all
+```
 
-### Real-Time Features
-- WebSocket support for instant notifications
-- Order status updates
-- Admin-to-customer messaging capability
+## 📊 Key Metrics Tracked
+```
+Success Criteria:
+├── Fake Detection F1: >0.95 (Vietnamese)
+├── Processing: <150ms/review 
+├── False Positives: <2%
+└── Scale: 10k reviews/day
+```
 
-## Development Environment
-- Backend: Python virtual environment (venv)
-- Frontend: Node.js with npm
-- Database: PostgreSQL
-- AI: Trained SVM model for fake review detection
+## ⚙️ Configuration (.env)
+```env
+DATABASE_URL=postgresql://user:pass@localhost/ecommerce_ai
+JWT_SECRET_KEY=your-super-secret-key-here
+AI_MODEL_PATH=./backend/ai/bert_onnx_model/
+DEBUG=True
+```
 
-## Key Files to Reference
-- Backend entry: `backend/run.py`
-- Frontend entry: `frontend/src/index.js`
-- Models: `backend/app/models/models.py`
-- AI training: `backend/ai/train_svm.py`
-- API routes: `backend/app/routes/`
-- React components: `frontend/src/components/`
+## 🚨 Edge Cases Handled
+- Vietnamese slang/emojis in reviews
+- Review bursts from same IP/User
+- Mixed language reviews (VN/EN)
+- Rating/review mismatch (1⭐ + \"Great product!\")
 
-This context file provides a high-level overview for quick understanding of the project structure and capabilities.
