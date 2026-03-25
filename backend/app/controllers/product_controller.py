@@ -4,6 +4,8 @@ import math
 from app.extensions import socketio 
 import os
 import requests
+import string
+import random
 from dotenv import load_dotenv
 
 import re # Đảm bảo có import re ở đầu file
@@ -169,6 +171,13 @@ def create_product():
             return jsonify({"message": "Category not found"}), 404
             
         description = data.get('description', '')
+        # Lấy SKU do Frontend gửi lên
+        sku = data.get('sku', '')[:6].upper()
+
+        # Kiểm tra vòng lặp: Nếu SKU đã tồn tại trong DB thì tự động sinh 3 ký tự cuối mới
+        while Product.query.filter_by(sku=sku).first():
+            random_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=3))
+            sku = sku[:3] + random_suffix
         
         new_product = Product(
             name=data.get('name'),
@@ -178,7 +187,7 @@ def create_product():
             category_id=int(data.get('category_id')),
             image_url=data.get('image_url', ''),
             # MỚI THÊM
-            sku=data.get('sku', ''),
+            sku=sku, # Đã được xác minh độ Unique 100%
             brand=data.get('brand', ''),
             specifications=data.get('specifications', {}),
             discount_price=float(data.get('discount_price')) if data.get('discount_price') else None,
