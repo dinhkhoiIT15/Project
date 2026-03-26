@@ -12,9 +12,9 @@ const Input = ({
   disabled = false
 }) => {
   return (
-    <div className="flex flex-col mb-4">
+    <div className="flex flex-col w-full">
       {label && (
-        <label className="mb-1.5 text-sm font-semibold text-[#1f2328]">
+        <label className="mb-1.5 text-xs font-bold text-[#1f2328] uppercase tracking-wide">
           {label} {required && <span className="text-[#d1242f]">*</span>}
         </label>
       )}
@@ -26,7 +26,7 @@ const Input = ({
         placeholder={placeholder}
         required={required}
         disabled={disabled}
-        className={`px-3 py-1.5 border rounded-md text-sm transition-all duration-200 outline-none
+        className={`px-3 py-2 h-[38px] w-full border rounded-md text-sm transition-all duration-200 outline-none
           ${error 
             ? 'border-[#d1242f] ring-1 ring-[#d1242f] bg-[#fff8f7]' 
             : 'border-[#d0d7de] focus:border-[#0969da] focus:ring-3 focus:ring-[#0969da]/20 bg-white'

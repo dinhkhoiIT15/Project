@@ -1,7 +1,7 @@
 import React from "react";
 import Button from "../../components/common/Button";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
-import ProductDialog from "../../components/common/ProductDialog";
+import ProductDialog from "../../components/common/AddProductDialog";
 import { PlusCircle, List, Edit, Trash2, Package } from "lucide-react";
 import Pagination from "../../components/common/Pagination";
 import useManageProducts from "../../hooks/admin/useManageProducts";
