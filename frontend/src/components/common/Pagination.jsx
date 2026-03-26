@@ -14,17 +14,26 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
     pages.push(i);
   }
 
+  // Loại bỏ border, chỉnh kích thước (w-8 h-8) và đổi sang font-medium giống thiết kế mới
   const btnBase =
-    "flex items-center justify-center w-9 h-9 rounded-md border text-sm font-bold transition-all";
-  const activeClass = "bg-[#ddf4ff] border-[#0969da] text-[#0969da] shadow-sm";
+    "flex items-center justify-center w-8 h-8 rounded-md text-sm font-medium transition-colors";
+  
+  // activeClass tương đương với "brand-secondary"
+  const activeClass = "bg-[#ddf4ff] text-[#0969da]"; 
+  
+  // inactiveClass tương đương với "neutral-tertiary" (nền trong suốt, hiện nền xám nhạt khi hover)
   const inactiveClass =
-    "bg-white border-[#d0d7de] text-[#1f2328] hover:bg-[#f6f8fa]";
+    "text-[#6e7781] bg-transparent hover:bg-[#f6f8fa] hover:text-[#1f2328]";
+    
   const disabledClass =
-    "opacity-40 cursor-not-allowed bg-[#f6f8fa] border-[#d0d7de]";
+    "opacity-40 cursor-not-allowed text-[#6e7781] bg-transparent";
 
   return (
-    <div className="flex w-full items-center justify-center gap-2 mt-12 py-4 border-t border-[#d0d7de]">
-      <div className="flex items-center gap-1">
+    // Vẫn giữ thiết lập căn lề phải (justify-end) và khoảng cách lề trên (mt-[5px]) như chúng ta đã làm ở bước trước
+    <div className="flex w-full items-center justify-end gap-1 mt-[5px] py-4 border-t border-[#d0d7de] pr-4">
+      
+      {/* Group 1: Nút First và Prev */}
+      <div className="flex items-center justify-center gap-1">
         <button
           onClick={() => onPageChange(1)}
           disabled={currentPage === 1}
@@ -41,7 +50,8 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         </button>
       </div>
 
-      <div className="flex items-center gap-1">
+      {/* Group 2: Các trang số */}
+      <div className="flex items-center justify-center gap-1">
         {pages.map((page) => (
           <button
             key={page}
@@ -53,7 +63,8 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         ))}
       </div>
 
-      <div className="flex items-center gap-1">
+      {/* Group 3: Nút Next và Last */}
+      <div className="flex items-center justify-center gap-1">
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}

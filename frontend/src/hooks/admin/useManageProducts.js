@@ -158,7 +158,7 @@ const useManageProducts = () => {
     try {
       const [catRes, prodRes] = await Promise.all([
         api.get("/categories"),
-        api.get("/products", { params: { page: currentPage } }),
+        api.get("/products", { params: { page: currentPage, per_page: 6 } }),
       ]);
       setCategories(catRes.data.categories || []);
       setProducts(prodRes.data.products || []);

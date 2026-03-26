@@ -58,7 +58,7 @@ const ManageProducts = () => {
       <div className="flex flex-col gap-8">
         {/* Danh sách Inventory MỚI HIỂN THỊ FULL WIDTH */}
         <div className="flex flex-col gap-6 w-full">
-          <div className="bg-white rounded-xl shadow-sm border border-[#d0d7de] p-6 flex flex-col gap-6">
+          <div className="bg-white rounded-xl shadow-sm border border-[#d0d7de] p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between border-b border-[#d0d7de] pb-4">
               <div className="flex items-center gap-2">
                 <List className="text-[#0969da]" size={24} />
@@ -78,92 +78,115 @@ const ManageProducts = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b-2 border-[#d0d7de] text-[#6e7781] text-xs uppercase tracking-wider">
-                    <th className="p-4 font-bold">Product</th>
-                    <th className="p-4 font-bold">Category</th>
-                    <th className="p-4 font-bold">Price</th>
-                    <th className="p-4 font-bold">Stock</th>
-                    <th className="p-4 font-bold">Status</th>
-                    <th className="p-4 font-bold text-center w-24">Actions</th>
+                  <tr className="border-b border-neutral-200">
+                    <th className="px-4 py-3 text-[11px] font-bold text-neutral-500 uppercase tracking-wider">Product Name</th>
+                    <th className="px-4 py-3 text-[11px] font-bold text-neutral-500 uppercase tracking-wider">Price</th>
+                    <th className="px-4 py-3 text-[11px] font-bold text-neutral-500 uppercase tracking-wider">Stock</th>
+                    <th className="px-4 py-3 text-[11px] font-bold text-neutral-500 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-[11px] font-bold text-neutral-500 uppercase tracking-wider text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#d0d7de]">
+                <tbody className="divide-y divide-neutral-200">
                   {products.map((p) => (
-                    <tr
-                      key={p.product_id}
-                      className="hover:bg-[#f6f8fa] transition-colors"
-                    >
-                      <td className="p-4 flex items-center gap-3">
-                        <div className="w-8 h-8 rounded border bg-[#f6f8fa] overflow-hidden flex-shrink-0">
+                    <tr key={p.product_id} className="hover:bg-neutral-50 transition-colors h-16">
+                      
+                      {/* CỘT 1: Product Info (Kết hợp Tên, Danh mục và SKU giống UI mới) */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-4">
                           <img
+                            className="h-10 w-14 flex-none rounded-md object-cover border border-neutral-200"
                             src={p.image_url || "https://res.cloudinary.com/subframe/image/upload/v1723780577/uploads/302/hhmv6ey0yajkadnmcp0a.png"}
-                            className="w-full h-full object-cover"
                             alt={p.name}
                           />
+                          <div className="flex flex-col items-start min-w-0">
+                            <span className="whitespace-nowrap text-sm font-bold text-neutral-900 truncate max-w-[250px]">
+                              {p.name}
+                            </span>
+                            <span className="text-[11px] font-medium text-neutral-500 flex items-center gap-1.5 mt-0.5">
+                              {p.category_name} 
+                              {p.sku && (
+                                <>
+                                  <span className="w-1 h-1 rounded-full bg-neutral-300"></span>
+                                  <span className="font-mono">{p.sku}</span>
+                                </>
+                              )}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex flex-col min-w-0">
-                          <span
-                            className="font-bold text-sm text-[#1f2328] truncate max-w-[200px]"
-                            title={p.name}
-                          >
-                            {p.name}
-                          </span>
-                          {p.sku && (
-                             <span className="text-[10px] text-[#6e7781] font-mono">SKU: {p.sku}</span>
+                      </td>
+
+                      {/* CỘT 2: Price Details (Kết hợp Giá gốc và Giá giảm) */}
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col items-start">
+                          {p.discount_price ? (
+                            <>
+                              <span className="whitespace-nowrap text-sm font-black text-red-600">
+                                ${p.discount_price.toFixed(2)}
+                              </span>
+                              <span className="text-[11px] font-medium text-neutral-400 line-through mt-0.5">
+                                ${p.price.toFixed(2)}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="whitespace-nowrap text-sm font-black text-neutral-900">
+                              ${p.price.toFixed(2)}
+                            </span>
                           )}
                         </div>
                       </td>
-                      <td className="p-4 text-sm text-[#1f2328] font-medium">
-                        {p.category_name}
-                      </td>
-                      <td className="p-4 text-sm font-black text-[#1f2328]">
-                        ${p.price.toFixed(2)}
-                      </td>
-                      <td className="p-4 text-sm font-bold">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs ${
-                            p.stock_quantity > 0
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {p.stock_quantity} in stock
+
+                      {/* CỘT 3: Stock Quantity */}
+                      <td className="px-4 py-3">
+                         <span className={`whitespace-nowrap text-sm font-bold ${p.stock_quantity > 0 ? 'text-neutral-700' : 'text-red-500'}`}>
+                          {p.stock_quantity}
                         </span>
                       </td>
-                      <td className="p-4">
-                         {p.is_active !== false ? (
-                           <span className="text-[9px] bg-[#dafbe1] text-[#1a7f37] px-1.5 py-0.5 rounded uppercase font-bold">Active</span>
-                         ) : (
-                           <span className="text-[9px] bg-[#f6f8fa] border border-[#d0d7de] text-[#6e7781] px-1.5 py-0.5 rounded uppercase font-bold">Hidden</span>
-                         )}
+
+                      {/* CỘT 4: Status */}
+                      <td className="px-4 py-3">
+                        {p.is_active !== false ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-green-100 text-green-700">
+                            Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-neutral-100 text-neutral-600 border border-neutral-200">
+                            Hidden
+                          </span>
+                        )}
                       </td>
-                      <td className="p-4 text-center">
-                        <div className="flex justify-center gap-1">
+
+                      {/* CỘT 5: Actions */}
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => handleEdit(p)}
-                            className="p-1.5 text-[#6e7781] hover:text-[#0969da]"
+                            className="p-1.5 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                           >
                             <Edit size={16} />
                           </button>
                           <button
                             onClick={() => initiateDelete(p.product_id)}
-                            className="p-1.5 text-[#6e7781] hover:text-[#cf222e]"
+                            className="p-1.5 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                           >
                             <Trash2 size={16} />
                           </button>
                         </div>
                       </td>
+
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-            />
+            {/* MỚI: Bọc Pagination trong một div để căn lề phải và giảm margin-top */}
+            <div className="flex justify-end mt-2"> 
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </div>
           </div>
         </div>
       </div>
