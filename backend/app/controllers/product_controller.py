@@ -84,6 +84,8 @@ def get_all_products():
     
     query = db.session.query(Product, Category.name.label('category_name')).outerjoin(
         Category, Product.category_id == Category.category_id
+    ).filter(
+        Product.is_active == True  # THÊM DÒNG NÀY: Chỉ hiển thị sản phẩm đang active
     )
     
     if search:
@@ -131,7 +133,10 @@ def get_all_products():
 def get_product_by_id(product_id):
     data = db.session.query(Product, Category.name.label('category_name')).outerjoin(
         Category, Product.category_id == Category.category_id
-    ).filter(Product.product_id == product_id).first()
+    ).filter(
+        Product.product_id == product_id,
+        Product.is_active == True  # THÊM DÒNG NÀY: Chỉ hiển thị nếu đang active
+    ).first()
 
     if not data:
         return jsonify({"message": "Product not found"}), 404
@@ -162,6 +167,62 @@ def get_product_by_id(product_id):
         },
         "status": "success"
     }), 200
+
+def get_similar_products(product_id):
+    """Get up to 4 products from the SAME category only, excluding current product"""
+    try:
+        # Lấy thông tin sản phẩm hiện tại
+        current_product = Product.query.get(product_id)
+        if not current_product:
+            return jsonify({"message": "Product not found"}), 404
+        
+        # Lấy tên category để debug
+        category = Category.query.get(current_product.category_id)
+        category_name = category.name if category else "Unknown"
+        
+        # CHỈ lấy sản phẩm cùng category, khác product_id, và đang active
+        # KHÔNG filter stock_quantity > 0 để vẫn hiển thị sản phẩm hết hàng (nhưng ghi nhãn Out of Stock)
+        # Sắp xếp: sản phẩm còn hàng lên trước, sau đó mới đến hết hàng
+        similar_products = db.session.query(Product, Category.name.label('category_name')).outerjoin(
+            Category, Product.category_id == Category.category_id
+        ).filter(
+            Product.category_id == current_product.category_id,
+            Product.product_id != product_id,
+            Product.is_active == True
+        ).order_by(
+            # Ưu tiên sản phẩm còn hàng lên trước
+            Product.stock_quantity > 0,  # True (còn hàng) sẽ được ưu tiên
+            Product.product_id.desc()  # Sản phẩm mới hơn lên trước
+        ).limit(4).all()
+        
+        result = []
+        for p, cat_name in similar_products:
+            result.append({
+                "product_id": p.product_id,
+                "name": p.name,
+                "price": p.price,
+                "description": p.description,
+                "stock_quantity": p.stock_quantity,
+                "category_id": p.category_id,
+                "category_name": cat_name or "General",
+                "image_url": p.image_url,
+                "sku": p.sku,
+                "brand": p.brand,
+                "discount_price": p.discount_price,
+                "is_active": p.is_active,
+                "specifications": p.specifications
+            })
+        
+        return jsonify({
+            "products": result,
+            "count": len(result),
+            "category": category_name,  # Thêm category vào response để debug
+            "status": "success"
+        }), 200
+        
+    except Exception as e:
+        print(f"Error in get_similar_products: {str(e)}")  # Log lỗi ra console
+        return jsonify({"message": f"Error fetching similar products: {str(e)}"}), 500
 
 def create_product():
     data = request.get_json()

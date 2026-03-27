@@ -1,7 +1,8 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import Navbar from "../../components/layout/Navbar";
 import Button from "../../components/common/Button";
+import ProductCard from "../../components/common/ProductCard";
 import {
   Loader2,
   Star,
@@ -20,6 +21,9 @@ import {
 import Breadcrumbs from "../../components/common/Breadcrumbs";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import useProductDetail from "../../hooks/customer/useProductDetail";
+import api from "../../services/api";
+import { useToast } from "../../context/ToastContext";
+import { useCart } from "../../context/CartContext";
 
 const ProductDetail = () => {
   const {
@@ -50,6 +54,8 @@ const ProductDetail = () => {
     handleDeleteClick,
     confirmDeleteReview,
     handleAddToCart,
+    similarProducts,
+    loadingSimilar,
   } = useProductDetail();
 
   if (loading)
@@ -465,23 +471,60 @@ const ProductDetail = () => {
         </div>
 
         <div className="mt-20 pt-10 border-t border-[#d0d7de]">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-black text-[#1f2328]">
-              Similar Products
-            </h2>
-            <Link
-              to="/"
-              className="flex items-center text-sm font-bold text-[#0969da] hover:underline"
-            >
-              View all <ChevronRight size={16} />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <p className="col-span-full text-center text-[#6e7781] italic py-10 bg-[#f6f8fa] border border-dashed border-[#d0d7de] rounded-xl">
-              Stay tuned! More similar products are coming soon.
-            </p>
-          </div>
-        </div>
+  <div className="flex items-center justify-between mb-8">
+    <h2 className="text-2xl font-black text-[#1f2328]">
+      Similar Products
+    </h2>
+    <Link
+      to={`/?category_id=${product?.category_id}`}
+      className="flex items-center text-sm font-bold text-[#0969da] hover:underline"
+    >
+      View all <ChevronRight size={16} />
+    </Link>
+  </div>
+  
+  {loadingSimilar ? (
+    <div className="flex justify-center py-10">
+      <Loader2 className="animate-spin text-[#0969da]" size={32} />
+    </div>
+  ) : similarProducts.length > 0 ? (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {similarProducts.map((product) => (
+        <ProductCard
+          key={product.product_id}
+          product={product}
+          onAddToCart={(productId) => {
+            // Xử lý thêm vào giỏ hàng cho sản phẩm tương tự
+            const handleAddSimilarToCart = async () => {
+              if (!localStorage.getItem("token")) {
+                addToast("Please login first!", "info");
+                navigate(location.pathname, {
+                  state: { openLogin: true },
+                  replace: true,
+                });
+                return;
+              }
+              try {
+                await api.post("/cart", { product_id: productId, quantity: 1 });
+                addToast("Added to cart successfully!", "success");
+                fetchCartCount();
+              } catch (err) {
+                addToast("Error adding to cart", "error");
+              }
+            };
+            handleAddSimilarToCart();
+          }}
+        />
+      ))}
+    </div>
+  ) : (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <p className="col-span-full text-center text-[#6e7781] italic py-10 bg-[#f6f8fa] border border-dashed border-[#d0d7de] rounded-xl">
+        No similar products found at the moment.
+      </p>
+    </div>
+  )}
+</div>
       </main>
       <ConfirmDialog
         isOpen={isDeleteDialogOpen}

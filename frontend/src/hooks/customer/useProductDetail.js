@@ -20,6 +20,8 @@ const useProductDetail = () => {
   const [addingToCart, setAddingToCart] = useState(false);
 
   const [reviews, setReviews] = useState([]);
+  const [similarProducts, setSimilarProducts] = useState([]);
+  const [loadingSimilar, setLoadingSimilar] = useState(false);
 
   const [newReviewContent, setNewReviewContent] = useState("");
   const [newReviewRating, setNewReviewRating] = useState(5);
@@ -108,6 +110,22 @@ const useProductDetail = () => {
     };
     fetchProduct();
   }, [id, navigate, addToast]);
+
+  useEffect(() => {
+  const fetchSimilarProducts = async () => {
+    if (!id) return;
+    setLoadingSimilar(true);
+    try {
+      const response = await api.get(`/products/${id}/similar`);
+      setSimilarProducts(response.data.products || []);
+    } catch (err) {
+      console.error("Failed to fetch similar products:", err);
+    } finally {
+      setLoadingSimilar(false);
+    }
+  };
+  fetchSimilarProducts();
+}, [id]);
 
   const handleSubmitReview = async () => {
     if (!localStorage.getItem("token") && !sessionStorage.getItem("token")) {
@@ -209,34 +227,36 @@ const useProductDetail = () => {
   };
 
   return {
-    product,
-    loading,
-    quantity,
-    setQuantity,
-    addingToCart,
-    reviews,
-    newReviewContent,
-    setNewReviewContent,
-    newReviewRating,
-    setNewReviewRating,
-    submittingReview,
-    editingReviewId,
-    setEditingReviewId,
-    editContent,
-    setEditContent,
-    editRating,
-    setEditRating,
-    isDeleteDialogOpen,
-    setIsDeleteDialogOpen,
-    isDeleting,
-    user,
-    navigate,
-    handleSubmitReview,
-    handleUpdateReview,
-    handleDeleteClick,
-    confirmDeleteReview,
-    handleAddToCart,
-  };
+  product,
+  loading,
+  quantity,
+  setQuantity,
+  addingToCart,
+  reviews,
+  similarProducts,
+  loadingSimilar,
+  newReviewContent,
+  setNewReviewContent,
+  newReviewRating,
+  setNewReviewRating,
+  submittingReview,
+  editingReviewId,
+  setEditingReviewId,
+  editContent,
+  setEditContent,
+  editRating,
+  setEditRating,
+  isDeleteDialogOpen,
+  setIsDeleteDialogOpen,
+  isDeleting,
+  user,
+  navigate,
+  handleSubmitReview,
+  handleUpdateReview,
+  handleDeleteClick,
+  confirmDeleteReview,
+  handleAddToCart,
+};
 };
 
 export default useProductDetail;
