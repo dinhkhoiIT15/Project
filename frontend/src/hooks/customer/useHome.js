@@ -13,26 +13,26 @@ const useHome = () => {
   const { addToast } = useToast();
   const { fetchCartCount } = useCart();
   const navigate = useNavigate();
-
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const searchTerm = searchParams.get("search") || "";
   const categoryParam = searchParams.get("category_id") || "";
-
+  const brandParam = searchParams.get("brand") || "";
   const [selectedCategory, setSelectedCategory] = useState(categoryParam);
+  const [selectedBrand, setSelectedBrand] = useState(brandParam);
 
   // Sync state với URL parameters
   useEffect(() => {
     setSelectedCategory(categoryParam);
-  }, [location.key, categoryParam]);
+    setSelectedBrand(brandParam);
+  }, [location.key, categoryParam, brandParam]);
 
   // Reset về trang 1 khi thay đổi tìm kiếm hoặc danh mục
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedCategory]);
+  }, [searchTerm, selectedCategory, selectedBrand]);
 
   // Fetch Danh mục sản phẩm (Chỉ chạy 1 lần khi mount)
   useEffect(() => {
@@ -53,8 +53,8 @@ const useHome = () => {
       setLoading(true);
       try {
         const res = await api.get(
-          `/products?search=${searchTerm}&category_id=${selectedCategory}&page=${currentPage}&per_page=8`,
-        );
+  `/products?search=${searchTerm}&category_id=${selectedCategory}&brand=${selectedBrand}&page=${currentPage}&per_page=8`,
+);
 
         if (res.data.status === "success") {
           setProducts(res.data.products || []);
@@ -69,7 +69,7 @@ const useHome = () => {
     };
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory, currentPage, searchTerm, refreshKey]);
+  }, [selectedCategory, selectedBrand, currentPage, searchTerm, refreshKey]);
 
   // Lắng nghe thay đổi dữ liệu realtime
   useEffect(() => {
@@ -106,6 +106,7 @@ const useHome = () => {
     totalPages,
     searchTerm,
     selectedCategory,
+    selectedBrand,
     navigate,
     handleAddToCart,
   };

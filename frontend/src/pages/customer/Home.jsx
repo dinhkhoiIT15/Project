@@ -16,6 +16,7 @@ const Home = () => {
     totalPages,
     searchTerm,
     selectedCategory,
+    selectedBrand,
     navigate,
     handleAddToCart,
   } = useHome();
@@ -35,22 +36,26 @@ const Home = () => {
 
         <div className="flex flex-col md:flex-row justify-between items-center gap-3 mb-8">
           <Breadcrumbs className="!mb-0">
-            <Breadcrumbs.Item to="/">Home</Breadcrumbs.Item>
-            <Breadcrumbs.Divider />
-            {searchTerm ? (
-              <Breadcrumbs.Item active>
-                Search results for "{searchTerm}"
-              </Breadcrumbs.Item>
-            ) : selectedCategory ? (
-              <Breadcrumbs.Item active>
-                {categories.find(
-                  (c) => c.category_id.toString() === selectedCategory,
-                )?.name || "Category"}
-              </Breadcrumbs.Item>
-            ) : (
-              <Breadcrumbs.Item active>All Products</Breadcrumbs.Item>
-            )}
-          </Breadcrumbs>
+  <Breadcrumbs.Item to="/">Home</Breadcrumbs.Item>
+  <Breadcrumbs.Divider />
+  {searchTerm ? (
+    <Breadcrumbs.Item active>
+      Search results for "{searchTerm}"
+    </Breadcrumbs.Item>
+  ) : selectedBrand ? (
+    <Breadcrumbs.Item active>
+      Brand: {selectedBrand}
+    </Breadcrumbs.Item>
+  ) : selectedCategory ? (
+    <Breadcrumbs.Item active>
+      {categories.find(
+        (c) => c.category_id.toString() === selectedCategory,
+      )?.name || "Category"}
+    </Breadcrumbs.Item>
+  ) : (
+    <Breadcrumbs.Item active>All Products</Breadcrumbs.Item>
+  )}
+</Breadcrumbs>
 
           <select
             className="bg-[#f6f8fa] border border-[#d0d7de] rounded-md px-3 py-1.5 text-sm font-semibold outline-none cursor-pointer hover:bg-[#eff1f3] min-w-[200px]"

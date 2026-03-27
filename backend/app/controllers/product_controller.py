@@ -79,13 +79,14 @@ Requirements:
 def get_all_products():
     search = request.args.get('search', '')
     category_id = request.args.get('category_id', '')
+    brand = request.args.get('brand', '')  # THÊM DÒNG NÀY
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 8, type=int)
     
     query = db.session.query(Product, Category.name.label('category_name')).outerjoin(
         Category, Product.category_id == Category.category_id
     ).filter(
-        Product.is_active == True  # THÊM DÒNG NÀY: Chỉ hiển thị sản phẩm đang active
+        Product.is_active == True
     )
     
     if search:
@@ -98,6 +99,13 @@ def get_all_products():
                 query = query.filter(Product.category_id == cat_id_int)
         except (ValueError, TypeError):
             pass
+    
+    # THÊM FILTER THEO BRAND - Sử dụng exact match không phân biệt hoa/thường
+    if brand and brand.strip():
+        # Dùng ilike với exact match (không có % ở đầu và cuối)
+        query = query.filter(Product.brand.ilike(brand))
+        # Log để debug (sẽ hiển thị trong terminal)
+        print(f"[DEBUG] Filtering by brand: '{brand}'")
     
     total_count = query.count()
     total_pages = math.ceil(total_count / per_page)

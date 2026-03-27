@@ -30,7 +30,8 @@ const ProductCard = ({ product, onAddToCart }) => {
           </div>
         ) : product.discount_price ? (
           <div className="absolute top-2 right-2 bg-[#cf222e] text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase z-10 shadow-sm">
-            Sale -{Math.round((1 - product.discount_price / product.price) * 100)}%
+            Sale -
+            {Math.round((1 - product.discount_price / product.price) * 100)}%
           </div>
         ) : null}
       </Link>
@@ -39,14 +40,17 @@ const ProductCard = ({ product, onAddToCart }) => {
         {/* MỚI: Hiển thị thêm Brand */}
         <div className="flex w-full flex-col items-start gap-1.5 min-h-[50px]">
           {product.brand && (
-            <span className="text-[9px] uppercase font-bold text-[#6e7781] bg-[#f6f8fa] border border-[#d0d7de] px-1.5 py-0.5 rounded-sm">
-              {product.brand}
-            </span>
+            <Link
+              to={`/?brand=${encodeURIComponent(product.brand)}`}
+              className="inline-block"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className="text-[9px] uppercase font-bold text-[#6e7781] border border-[#d0d7de] px-1.5 py-0.5 rounded-sm transition-all duration-200 hover:text-[#0969da] hover:border-[#0969da] hover:shadow-[0_0_0_1px_#0969da]">
+                {product.brand}
+              </span>
+            </Link>
           )}
-          <Link
-            to={`/product/${product.product_id}`}
-            className="w-full"
-          >
+          <Link to={`/product/${product.product_id}`} className="w-full">
             <span
               className="text-sm font-bold text-[#1f2328] line-clamp-2 group-hover:text-[#0969da] transition-colors leading-snug"
               title={product.name}
@@ -92,11 +96,15 @@ const ProductCard = ({ product, onAddToCart }) => {
             onClick={() => onAddToCart(product.product_id)}
             fullWidth
             variant="outline"
-            disabled={product.stock_quantity <= 0 || product.is_active === false}
+            disabled={
+              product.stock_quantity <= 0 || product.is_active === false
+            }
             className="py-2 text-[11px] font-bold border-[#d0d7de] hover:bg-[#f6f8fa] h-9"
           >
             <ShoppingCart className="w-3.5 h-3.5 mr-2" />
-            {product.stock_quantity <= 0 || product.is_active === false ? "Unavailable" : "Add to Cart"}
+            {product.stock_quantity <= 0 || product.is_active === false
+              ? "Unavailable"
+              : "Add to Cart"}
           </Button>
         </div>
       </div>
