@@ -156,7 +156,15 @@ const ManageOrders = () => {
                           <p className="text-xs text-[#6e7781] mt-1">Quantity: {item.quantity}</p>
                         </div>
                       </div>
-                      <p className="font-black text-[#1f2328]">${item.price.toFixed(2)}</p>
+                      
+                      <div className="text-right">
+                        <p className="font-black text-[#cf222e]">${item.price.toFixed(2)}</p>
+                        {item.original_price && item.original_price > item.price && (
+                          <p className="text-xs line-through text-[#6e7781]">
+                            ${item.original_price.toFixed(2)}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

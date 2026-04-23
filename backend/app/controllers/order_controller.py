@@ -43,7 +43,9 @@ def checkout():
         if product:
             if product.stock_quantity < item.quantity:
                 return jsonify({"message": f"Not enough stock for {product.name}"}), 400
-            total_amount += product.price * item.quantity
+            
+            effective_price = product.discount_price if product.discount_price is not None and product.discount_price > 0 else product.price
+            total_amount += effective_price * item.quantity
     
     new_order = Order(
         user_id=user_id,
@@ -59,11 +61,14 @@ def checkout():
     
     for item in cart_items:
         product = Product.query.get(item.product_id)
+        
+        effective_price = product.discount_price if product.discount_price is not None and product.discount_price > 0 else product.price
+        
         order_detail = OrderDetail(
             order_id=new_order.order_id,
             product_id=item.product_id,
             quantity=item.quantity,
-            price_at_purchase=product.price
+            price_at_purchase=effective_price  
         )
         db.session.add(order_detail)
         product.stock_quantity -= item.quantity
@@ -223,7 +228,8 @@ def get_order_by_id(order_id):
             "product_name": product.name if product else "Unknown Product",
             "image_url": product.image_url if product else "",
             "quantity": d.quantity,
-            "price": d.price_at_purchase
+            "price": d.price_at_purchase,
+            "original_price": product.price if product else d.price_at_purchase,
         })
 
     result = {

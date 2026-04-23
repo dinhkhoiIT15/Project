@@ -20,9 +20,17 @@ const CartItem = ({ item, onUpdateQty, onRemove }) => {
               Category: {item.category_name || "General"}
             </span>
           </div>
-          <span className="text-body-bold font-bold text-[#1f2328]">
-            ${item.price.toFixed(2)}
-          </span>
+          
+          <div className="flex flex-col items-end">
+            <span className="text-body-bold font-bold text-[#cf222e]">
+              ${item.price.toFixed(2)}
+            </span>
+            {item.original_price && item.original_price > item.price && (
+              <span className="text-xs line-through text-[#6e7781]">
+                ${item.original_price.toFixed(2)}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-4">

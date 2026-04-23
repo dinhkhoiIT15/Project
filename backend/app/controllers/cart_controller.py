@@ -58,13 +58,16 @@ def get_cart():
             category = Category.query.get(product.category_id) if product.category_id else None
             category_name = category.name if category else "Uncategorized"
             
-            item_total = product.price * item.quantity
+            effective_price = product.discount_price if product.discount_price is not None and product.discount_price > 0 else product.price
+            
+            item_total = effective_price * item.quantity
             total_price += item_total
             result.append({
                 "cart_item_id": item.cart_item_id,
                 "product_id": product.product_id,
                 "product_name": product.name,
-                "price": product.price,
+                "price": effective_price,
+                "original_price": product.price,
                 "quantity": item.quantity,
                 "stock_quantity": product.stock_quantity, 
                 "item_total": item_total,
