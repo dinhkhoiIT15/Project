@@ -7,94 +7,78 @@ from huggingface_hub import snapshot_download, HfApi
 import os
 import re
 import requests
-import csv # MỚI THÊM
+import csv
 from dotenv import load_dotenv
 
 
-# MỚI: Kích hoạt lõi truyền tải siêu tốc độ (Rust) của Hugging Face
 os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
 
-# Địa chỉ của AI Microservice đang chạy ở cổng 8000
 AI_SERVICE_URL = "http://127.0.0.1:8000/predict"
 
-# MỚI: Hàm ghi nối dữ liệu vào file new_feedback_data.csv
 def append_to_feedback_csv(text, label):
     try:
         csv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../ai/new_feedback_data.csv'))
         file_exists = os.path.isfile(csv_path)
         
-        # Xóa ký tự xuống dòng để tránh lỗi file CSV
         clean_text = str(text).replace('\n', ' ').replace('\r', '').strip()
         
         with open(csv_path, mode='a', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
-            # Nếu file chưa tồn tại hoặc trống, tạo dòng tiêu đề
             if not file_exists or os.stat(csv_path).st_size == 0:
                 writer.writerow(['text', 'label'])
-            # Ghi nội dung và nhãn (1: Fake/Xóa, 0: Real/Chấp nhận)
             writer.writerow([clean_text, label])
     except Exception as e:
         print(f"⚠️ Error writing to CSV: {e}")
 
-load_dotenv()  # Tải biến môi trường từ file .env
+load_dotenv()  
 HF_TOKEN = os.getenv("HF_TOKEN")
 HF_REPO = "dinhkhoi1501/fake-review-model"
 
 def is_gibberish(text):
-    """Phát hiện chuỗi vô nghĩa, quảng cáo hoặc link tào lao."""
-    # 1. Chặn Link quảng cáo
     if re.search(r'(http://|https://|www\.|[a-zA-Z0-9-]+\.[a-zA-Z]{2,})', text):
         return True
     
     words = text.split()
     for word in words:
-        # 2. Từ quá dài không có khoảng trắng (VD: asdasdasdasdasdasd)
         if len(word) > 20:
             return True
-        # 3. Chuỗi chứa 6 phụ âm liên tiếp (VD: bcdfgh)
         if re.search(r'[bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ]{6,}', word):
             return True
             
     return False
 
 def is_irrelevant_comment(content, product_name, category_name):
-    """Phát hiện bình luận lạc đề (Áp dụng chuyên cho shop Công nghệ/Điện tử)."""
     content_lower = content.lower()
     
-    # 1. Tập trung blacklist cho đồ công nghệ
-    # VD: Mua bàn phím nhưng khen camera nét, mua đồ công nghệ nhưng khen vải đẹp, son môi, thức ăn ngon...
     wrong_context_keywords = {
         'phone': ['shirt', 'pants', 'shoes', 'lipstick', 'sunscreen', 'food', 'delicious', 'switch', 'keycap'],
         'laptop': ['shirt', 'pants', 'lipstick', 'sunscreen', 'food', 'delicious'],
         'keyboard_mouse': ['screen size', 'camera', 'lens', 'megapixel', 'shirt', 'pants', 'shoes'],
-        'general_tech': ['shirt', 'pants', 'shoes', 'lipstick', 'food', 'delicious', 'vải', 'áo', 'quần', 'ngon']
+        'general_tech': ['shirt', 'pants', 'shoes', 'lipstick', 'food', 'delicious', 'switch', 'keycap']
     }
     
     current_context = "general_tech"
-    # Dùng cả category_name và product_name để bắt ngữ cảnh chính xác hơn
     combined_text = f"{category_name} {product_name}".lower() if category_name or product_name else ""
     
-    if 'phone' in combined_text or 'mobile' in combined_text or 'điện thoại' in combined_text: 
+    if 'phone' in combined_text or 'mobile' in combined_text: 
         current_context = 'phone'
-    elif 'laptop' in combined_text or 'computer' in combined_text or 'máy tính' in combined_text: 
+    elif 'laptop' in combined_text or 'computer' in combined_text: 
         current_context = 'laptop'
-    elif 'keyboard' in combined_text or 'mouse' in combined_text or 'bàn phím' in combined_text or 'chuột' in combined_text: 
+    elif 'keyboard' in combined_text or 'mouse' in combined_text: 
         current_context = 'keyboard_mouse'
             
     if current_context in wrong_context_keywords:
         for wrong_word in wrong_context_keywords[current_context]:
             if wrong_word in content_lower:
-                return True  # Đánh dấu là Lạc đề (Irrelevant)!
+                return True
 
     return False
 
 def predict_fake_score(content):
-    """Gửi request sang AI Microservice để chấm điểm Fake Review."""
     try:
         response = requests.post(AI_SERVICE_URL, json={"content": content}, timeout=5)
         if response.status_code == 200:
             data = response.json()
-            # Lấy điểm fake_score (thang 0-100)
             return data.get("fake_score", 0.0)
         else:
             print(f"⚠️ AI Service returned status {response.status_code}")
@@ -164,7 +148,6 @@ def add_review():
     if existing_review:
         return jsonify({"message": "You have already reviewed this product."}), 409
     
-    # Lấy thông tin sản phẩm và danh mục để làm ngữ cảnh kiểm tra lạc đề
     product_info = Product.query.get(product_id)
     category_info = Category.query.get(product_info.category_id) if product_info and product_info.category_id else None
     product_name = product_info.name if product_info else ""
@@ -172,9 +155,8 @@ def add_review():
 
     is_irrelevant_flag = is_irrelevant_comment(content, product_name, category_name)
 
-    # Kiểm tra Gibberish/Link tào lao trước
     if is_gibberish(content):
-        fake_prob = 99.9  # Ép điểm tuyệt đối để đưa ngay vào thẻ AI Fake Alerts
+        fake_prob = 99.9  
     else:
         fake_prob = round(predict_fake_score(content), 2)
     
@@ -199,7 +181,7 @@ def add_review():
         is_fake=is_fake,
         is_hidden=is_hidden,
         confidence_score=fake_prob,
-        is_irrelevant=is_irrelevant_flag  # Lưu trạng thái lạc đề
+        is_irrelevant=is_irrelevant_flag  
     )
     
     try:
@@ -315,7 +297,7 @@ def admin_get_all_reviews():
             "is_fake": r.is_fake,
             "is_hidden": r.is_hidden,
             "confidence_score": getattr(r, 'confidence_score', 0.0),
-            "is_irrelevant": getattr(r, 'is_irrelevant', False), # MỚI: Trả về Frontend
+            "is_irrelevant": getattr(r, 'is_irrelevant', False), 
             "created_at": r.created_at.strftime('%Y-%m-%d') if r.created_at else "Unknown"
         })
         
@@ -333,7 +315,6 @@ def delete_review(review_id):
         product_id = review.product_id
         user_id = review.user_id
         
-        # MỚI: Lưu comment bị xóa vào Data Train với nhãn 1 (Fake/Spam)
         append_to_feedback_csv(review.content, 1)
         
         notif = Notification(
@@ -379,11 +360,10 @@ def accept_review(review_id):
     review = Review.query.get(review_id)
     if not review: return jsonify({"message": "Review not found"}), 404
     
-    # MỚI: Lưu comment được duyệt vào Data Train với nhãn 0 (Real)
     append_to_feedback_csv(review.content, 0)
     
     review.is_fake = False
-    review.is_hidden = False  # Đảm bảo nó được hiển thị
+    review.is_hidden = False  
     db.session.commit()
     
     # Emit to product room to show the review
@@ -461,7 +441,6 @@ def user_delete_review(review_id):
     return jsonify({"message": "Review deleted successfully", "status": "success"}), 200
 
 def admin_get_product_context(product_id):
-    """API lấy thông tin sản phẩm và toàn bộ review của nó cho Pop-up"""
     product = Product.query.get(product_id)
     if not product:
         return jsonify({"message": "Product not found"}), 404
@@ -495,13 +474,11 @@ def admin_get_product_context(product_id):
     }), 200
 
 def push_data_to_hf():
-    """Đẩy file new_feedback_data.csv lên HF và xóa sạch data local"""
     try:
         print("☁️ [API] Request received: Pushing new feedback data to Hugging Face...")
         api = HfApi()
         csv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../ai/new_feedback_data.csv'))
         
-        # Kiểm tra file tồn tại và có dung lượng > 0 hay không
         if not os.path.exists(csv_path) or os.stat(csv_path).st_size == 0:
             print("⚠️ No data found to push.")
             return jsonify({"status": "error", "message": "No new feedback data found to push"}), 400
@@ -516,7 +493,6 @@ def push_data_to_hf():
         )
         print("✅ Upload complete! Clearing local file...")
         
-        # MỚI: Xóa trắng file nội dung, chỉ giữ lại tiêu đề cột
         with open(csv_path, mode='w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             writer.writerow(['text', 'label'])
@@ -528,7 +504,6 @@ def push_data_to_hf():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 def pull_model_from_hf():
-    """Tải model ONNX mới nhất từ Hugging Face về và tự động reload AI Microservice"""
     try:
         print("☁️ [API] Request received: Pulling latest model from Hugging Face...")
         model_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../ai/bert_onnx_model'))
@@ -543,7 +518,6 @@ def pull_model_from_hf():
         )
         print("✅ Download complete! Latest model synced successfully.")
         
-        # MỚI: Gửi request ép AI Microservice nạp lại model từ ổ cứng vào RAM
         try:
             print("🔄 Triggering Hot-Reload on AI Microservice...")
             reload_url = AI_SERVICE_URL.replace('/predict', '/reload')

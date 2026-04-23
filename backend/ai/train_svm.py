@@ -15,11 +15,9 @@ def text_process(review):
     return [word for word in nopunc.split() if word.lower() not in stopwords.words('english')]
 
 print("Loading data...")
-# MỚI: Tự động lấy đường dẫn của thư mục 'ai' hiện tại
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CSV_PATH = os.path.join(BASE_DIR, 'fake_reviews_dataset.csv')
 
-# Load dataset dựa trên đường dẫn tuyệt đối
 df = pd.read_csv(CSV_PATH)
 if 'Unnamed: 0' in df.columns:
     df.drop('Unnamed: 0', axis=1, inplace=True)
@@ -29,11 +27,9 @@ print("Training AI (SVM) model...")
 pipeline = Pipeline([
     ('bow', CountVectorizer(analyzer=text_process)),
     ('tfidf', TfidfTransformer()),
-    # MỚI: Bật tính năng tính xác suất (probability)
     ('classifier', SVC(probability=True))
 ])
 
-# Train on the entire dataset to get the best model
 pipeline.fit(df['text'], df['label'])
 
 # Save the model to a .pkl file

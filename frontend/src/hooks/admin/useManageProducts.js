@@ -99,19 +99,18 @@ const useManageProducts = () => {
     category_id: "",
     stock_quantity: "0",
     image_url: "",
-    keywords: "",      // MỚI
-    description: "",   // MỚI
+    keywords: "",      
+    description: "",   
     sku: "",
     brand: "",
     discount_price: "",
     is_active: true,
-    specifications: {}, // Đổi thành dạng Object
+    specifications: {},
   });
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   
-  // MỚI: State quản lý Popup và ô tìm kiếm Specs
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [specSearch, setSpecSearch] = useState("");
 
@@ -128,14 +127,10 @@ const useManageProducts = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
-  // MỚI: Logic tự động sinh SKU (6 ký tự: 2 chữ Tên + 1 chữ Specs + 3 ngẫu nhiên)
   useEffect(() => {
-    // Chỉ tự động sinh SKU khi đang tạo mới sản phẩm
     if (!editingId && formData.name) {
-      // 1. Lấy 2 ký tự đầu của tên sản phẩm (chỉ lấy chữ/số, bỏ khoảng trắng/kí tự đặc biệt)
       const namePrefix = formData.name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 2).toUpperCase() || 'PR';
 
-      // 2. Lấy 1 ký tự đầu của thông số Specs đầu tiên (nếu có)
       let specChar = 'X';
       const specValues = Object.values(formData.specifications || {});
       if (specValues.length > 0 && typeof specValues[0] === 'string' && specValues[0].length > 0) {
@@ -144,7 +139,6 @@ const useManageProducts = () => {
 
       const targetPrefix = (namePrefix + specChar).padEnd(3, 'X');
 
-      // 3. Chỉ sinh lại chuỗi random nếu Prefix bị đổi, tránh việc SKU nhảy liên tục khi Admin đang gõ phím
       if (!formData.sku || !formData.sku.startsWith(targetPrefix)) {
         const randomSuffix = Math.random().toString(36).substring(2, 5).toUpperCase();
         const generatedSku = (targetPrefix + randomSuffix).substring(0, 6);
@@ -201,10 +195,9 @@ const useManageProducts = () => {
       is_active: p.is_active ?? true,
       specifications: p.specifications || {},
     });
-    setIsModalOpen(true); // MỚI: Mở modal thay vì scroll
+    setIsModalOpen(true); 
   };
 
-  // --- MỚI: CÁC HÀM QUẢN LÝ SPECIFICATIONS ---
   const handleAddSpec = (key) => {
     setFormData(prev => ({
       ...prev,
@@ -226,7 +219,6 @@ const useManageProducts = () => {
       return { ...prev, specifications: newSpecs };
     });
   };
-  // ------------------------------------------
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -238,7 +230,7 @@ const useManageProducts = () => {
       category_id: parseInt(formData.category_id),
       stock_quantity: parseInt(formData.stock_quantity),
       discount_price: formData.discount_price ? parseFloat(formData.discount_price) : null,
-      specifications: formData.specifications // Truyền thẳng Object
+      specifications: formData.specifications 
     };
 
     try {
@@ -251,7 +243,7 @@ const useManageProducts = () => {
       }
       resetForm();
       fetchInitialData();
-      setIsModalOpen(false); // MỚI: Đóng modal sau khi thao tác thành công
+      setIsModalOpen(false);
     } catch (err) {
       addToast("Operation failed", "error");
     } finally {
@@ -273,11 +265,10 @@ const useManageProducts = () => {
       brand: "",
       discount_price: "",
       is_active: true,
-      specifications: {}, // Đổi thành dạng Object
+      specifications: {}, 
     });
   };
 
-  // MỚI: Hàm gọi AI sinh mô tả
   const handleGenerateDescription = async () => {
     if (!formData.name || !formData.category_id) {
       addToast("Please enter Product Name and select a Category first", "error");
@@ -326,7 +317,6 @@ const useManageProducts = () => {
     };
   }, [formData.name, formData.category_id, categories]);
 
-  // MỚI: Xử lý logic lọc danh sách Specs ngay trong Hook
   const filteredSpecs = useMemo(() => {
     const specKeys = Object.keys(availableContext.specs);
     return specKeys.filter(s => 
@@ -353,11 +343,11 @@ const useManageProducts = () => {
     handleSubmit,
     resetForm,
     handleGenerateDescription,
-    isGenerating, // Thêm isGenerating để tránh lỗi bên giao diện
+    isGenerating, 
     handleAddSpec,
     handleUpdateSpec,
     handleRemoveSpec,
-    availableContext, // Trả về context để giao diện sử dụng
+    availableContext, 
     isModalOpen,
     setIsModalOpen,
     specSearch,

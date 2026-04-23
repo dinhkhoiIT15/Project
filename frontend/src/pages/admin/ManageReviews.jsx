@@ -135,7 +135,6 @@ const ManageReviews = () => {
         </div>
       </div>
 
-      {/* MỚI: KHỐI CHUYỂN TAB REAL / FAKE REVIEWS */}
       <div className="flex gap-4 mb-6 border-b border-[#d0d7de]">
         <button
           onClick={() => {
@@ -173,7 +172,6 @@ const ManageReviews = () => {
         </button>
       </div>
 
-      {/* KHỐI UI TEST AI TẠM THỜI */}
       <div className="bg-white border border-[#d0d7de] rounded-lg shadow-sm p-5 mb-6">
         <h2 className="text-sm font-black text-[#1f2328] mb-3 flex items-center gap-2">
           <AlertTriangle size={18} className="text-[#0969da]" /> AI Fake Review
@@ -195,7 +193,6 @@ const ManageReviews = () => {
           </button>
         </div>
 
-        {/* Khối hiển thị kết quả phần trăm */}
         {testResult && (
           <div
             className={`mt-4 p-4 rounded-md border flex justify-between items-center transition-all ${testResult.is_fake ? "bg-[#ffebe9] border-[#cf222e]/30" : "bg-[#dafbe1] border-[#1a7f37]/30"}`}
@@ -287,7 +284,6 @@ const ManageReviews = () => {
                       "{review.content}"
                     </td>
                     <td className="p-4 flex flex-col gap-1.5">
-                      {/* MỚI: Hiển thị cảnh báo Lạc đề / Sai chủ đề */}
                       {review.is_irrelevant && (
                         <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md w-fit shadow-sm border bg-[#f5f0ff] text-[#8250df] border-[#8250df]/20">
                           <AlertTriangle size={12} strokeWidth={2.5} />
@@ -299,8 +295,8 @@ const ManageReviews = () => {
                         <span
                           className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md w-fit shadow-sm border ${
                             review.confidence_score >= 60
-                              ? "bg-[#ffebe9] text-[#cf222e] border-[#cf222e]/20" // Nguy hiểm (Đỏ)
-                              : "bg-[#fff8c5] text-[#9a6700] border-[#9a6700]/20" // Nghi ngờ (Vàng)
+                              ? "bg-[#ffebe9] text-[#cf222e] border-[#cf222e]/20"
+                              : "bg-[#fff8c5] text-[#9a6700] border-[#9a6700]/20" 
                           }`}
                         >
                           <AlertTriangle size={12} strokeWidth={2.5} />
@@ -318,7 +314,6 @@ const ManageReviews = () => {
                       )}
                     </td>
                     <td className="p-4 text-center space-x-2">
-                      {/* MỚI: Chỉ hiển thị nút ẩn/hiện nếu không phải Fake review chắc chắn (>= 60%) */}
                       {!(review.is_fake && review.confidence_score >= 60) && (
                         <button
                           onClick={() => toggleHide(review.review_id)}
@@ -334,7 +329,6 @@ const ManageReviews = () => {
                           )}
                         </button>
                       )}
-                      {/* MỚI: Nút Accept chỉ hiển thị cho Fake reviews */}
                       {review.is_fake && (
                         <button
                           onClick={() => handleAccept(review.review_id)}
@@ -434,7 +428,6 @@ const ManageReviews = () => {
         isLoading={isDeleting}
       />
 
-      {/* MỚI: Tiến trình đẩy dữ liệu lên Hugging Face hiển thị ở góc phải dưới */}
       {showProgress && (
         <div className="fixed bottom-6 right-6 bg-white border border-[#d0d7de] p-4 rounded-lg shadow-2xl w-80 z-[9999] animate-slide-in-right">
           <div className="flex justify-between items-center mb-3">
@@ -456,7 +449,6 @@ const ManageReviews = () => {
         </div>
       )}
 
-      {/* MỚI: Tiến trình tải Model (Sync) hiển thị ở góc phải dưới (Màu xanh dương) */}
       {showPullProgress && (
         <div className="fixed bottom-6 right-6 bg-white border border-[#d0d7de] p-4 rounded-lg shadow-2xl w-80 z-[9999] animate-slide-in-right">
           <div className="flex justify-between items-center mb-3">

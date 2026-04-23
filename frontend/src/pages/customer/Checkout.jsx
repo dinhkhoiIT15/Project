@@ -19,7 +19,6 @@ const Checkout = () => {
     navigate,
   } = useCheckout();
 
-  // MỚI: Giao diện Màn hình chờ xác nhận (Hiển thị khi đã đặt hàng thành công)
   if (placedOrderId) {
     return (
       <div className="min-h-screen bg-[#f8fafc]">
@@ -55,7 +54,7 @@ const Checkout = () => {
                   variant="outline"
                   fullWidth
                   onClick={handleUserCancel}
-                  disabled={countdown === 0} // Hết giờ sẽ vô hiệu hóa nút
+                  disabled={countdown === 0} 
                   className={
                     countdown > 0
                       ? "border-[#cf222e] text-[#cf222e] hover:bg-[#ffebe9]"
@@ -102,7 +101,6 @@ const Checkout = () => {
     );
   }
 
-  // Giao diện Checkout bình thường (Chưa đặt hàng)
   return (
     <div className="min-h-screen bg-white font-sans">
       <Navbar />

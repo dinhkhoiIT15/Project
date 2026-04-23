@@ -56,7 +56,6 @@ const ManageProducts = () => {
       </div>
 
       <div className="flex flex-col gap-8">
-        {/* Danh sách Inventory MỚI HIỂN THỊ FULL WIDTH */}
         <div className="flex flex-col gap-6 w-full">
           <div className="bg-white rounded-xl shadow-sm border border-[#d0d7de] p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between border-b border-[#d0d7de] pb-4">
@@ -89,8 +88,6 @@ const ManageProducts = () => {
                 <tbody className="divide-y divide-neutral-200">
                   {products.map((p) => (
                     <tr key={p.product_id} className="hover:bg-neutral-50 transition-colors h-16">
-                      
-                      {/* CỘT 1: Product Info (Kết hợp Tên, Danh mục và SKU giống UI mới) */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-4">
                           <img
@@ -115,7 +112,6 @@ const ManageProducts = () => {
                         </div>
                       </td>
 
-                      {/* CỘT 2: Price Details (Kết hợp Giá gốc và Giá giảm) */}
                       <td className="px-4 py-3">
                         <div className="flex flex-col items-start">
                           {p.discount_price ? (
@@ -135,14 +131,12 @@ const ManageProducts = () => {
                         </div>
                       </td>
 
-                      {/* CỘT 3: Stock Quantity */}
                       <td className="px-4 py-3">
                          <span className={`whitespace-nowrap text-sm font-bold ${p.stock_quantity > 0 ? 'text-neutral-700' : 'text-red-500'}`}>
                           {p.stock_quantity}
                         </span>
                       </td>
 
-                      {/* CỘT 4: Status */}
                       <td className="px-4 py-3">
                         {p.is_active !== false ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-green-100 text-green-700">
@@ -155,7 +149,6 @@ const ManageProducts = () => {
                         )}
                       </td>
 
-                      {/* CỘT 5: Actions */}
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button
@@ -179,7 +172,6 @@ const ManageProducts = () => {
               </table>
             </div>
 
-            {/* MỚI: Bọc Pagination trong một div để căn lề phải và giảm margin-top */}
             <div className="flex justify-end mt-2"> 
               <Pagination
                 currentPage={currentPage}
@@ -199,7 +191,6 @@ const ManageProducts = () => {
         message="Are you sure you want to delete this product? This action cannot be undone."
       />
 
-      {/* MỚI: Truyền dữ liệu sang Popup */}
       <ProductDialog
         isOpen={isModalOpen}
         onClose={() => { setIsModalOpen(false); resetForm(); }}

@@ -28,15 +28,12 @@ Flask-JWT-Extended==4.6.0
 Flask-SocketIO==5.5.0
 eventlet==0.36.1
 
-<<<<<<< HEAD
 # AI Microservice & External APIs
 fastapi==0.115.0
 pydantic==2.9.2
 huggingface-hub==0.26.1
 requests==2.32.3
 
-=======
->>>>>>> 8b47f6a9682f99293e5b12efd14163589c288dda
 # Dev Tools
 black==24.8.0  # Code formatter
 flake8==7.1.1  # Linter

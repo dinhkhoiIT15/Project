@@ -311,7 +311,6 @@ const ProductDetail = () => {
                     <h1 className="text-2xl font-black text-[#1f2328] leading-tight">
                       {product?.name}
                     </h1>
-                    {/* MỚI: Hiển thị Category, Brand và SKU */}
                     <div className="flex flex-wrap items-center gap-2 mt-1">
                       <span className="text-xs font-bold uppercase text-[#0969da] bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
                         {product?.category_name}
@@ -338,7 +337,6 @@ const ProductDetail = () => {
                   </button>
                 </div>
 
-                {/* MỚI: Hiển thị Giá giảm và Giá gốc */}
                 <div className="flex items-end gap-3 mt-2">
                   {product?.discount_price ? (
                     <>
@@ -447,7 +445,6 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            {/* MỚI: Bảng Thông số kỹ thuật */}
             {product?.specifications &&
               Object.keys(product.specifications).length > 0 && (
                 <div className="flex flex-col gap-3 mb-6">
@@ -521,7 +518,6 @@ const ProductDetail = () => {
                   key={product.product_id}
                   product={product}
                   onAddToCart={(productId) => {
-                    // Xử lý thêm vào giỏ hàng cho sản phẩm tương tự
                     const handleAddSimilarToCart = async () => {
                       if (!localStorage.getItem("token")) {
                         addToast("Please login first!", "info");

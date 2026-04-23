@@ -29,7 +29,6 @@ import useDashboard from "../../hooks/admin/useDashboard";
 const COLORS = ["#0969da", "#1a7f37", "#bf3989", "#cf222e", "#8250df"];
 
 const Dashboard = () => {
-  // Sử dụng logic từ Custom Hook chỉ với 1 dòng
   const { data, loading } = useDashboard();
 
   if (loading)

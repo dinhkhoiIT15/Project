@@ -45,7 +45,6 @@ const useManageUsers = () => {
     }
   };
 
-  // Đã thêm refreshKey vào dependencies để socket tự động cập nhật danh sách
   useEffect(() => {
     fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps

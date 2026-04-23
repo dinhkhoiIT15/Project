@@ -8,12 +8,10 @@ export const useAppInit = () => {
   const { loading, isAuthenticated, user } = useAuth();
   const isAdminPath = location.pathname.startsWith("/admin");
 
-  // Cuộn lên đầu trang mỗi khi chuyển route
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
-  // Tự động chuyển hướng Admin từ trang chủ vào Dashboard
   useEffect(() => {
     if (
       !loading &&

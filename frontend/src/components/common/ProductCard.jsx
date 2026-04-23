@@ -19,7 +19,6 @@ const ProductCard = ({ product, onAddToCart }) => {
           alt={product.name}
         />
 
-        {/* MỚI: Ưu tiên hiện nhãn Unavailable -> Out of Stock -> Sale */}
         {product.is_active === false ? (
           <div className="absolute top-2 right-2 bg-[#6e7781] text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase z-10">
             Unavailable
@@ -37,7 +36,6 @@ const ProductCard = ({ product, onAddToCart }) => {
       </Link>
 
       <div className="flex w-full flex-col items-start gap-4 px-4 py-5 flex-grow">
-        {/* MỚI: Hiển thị thêm Brand */}
         <div className="flex w-full flex-col items-start gap-1.5 min-h-[50px]">
           {product.brand && (
             <Link
@@ -65,7 +63,6 @@ const ProductCard = ({ product, onAddToCart }) => {
             <span className="line-clamp-1 w-full text-[10px] font-bold text-[#6e7781] uppercase tracking-wider">
               Price
             </span>
-            {/* MỚI: Xử lý hiển thị Giá giảm */}
             {product.discount_price ? (
               <div className="flex flex-col">
                 <span className="line-clamp-1 w-full text-sm font-black text-[#cf222e]">

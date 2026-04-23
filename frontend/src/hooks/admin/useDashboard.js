@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
-import api from "../../services/api"; // Đảm bảo đường dẫn import api đúng với cấu trúc thư mục của bạn
+import api from "../../services/api"; 
 
 const useDashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Effect fetch dữ liệu mỗi khi refreshKey thay đổi
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -23,7 +22,6 @@ const useDashboard = () => {
     fetchDashboardData();
   }, [refreshKey]);
 
-  // Effect kết nối Socket.IO để lắng nghe các sự kiện realtime
   useEffect(() => {
     const socket = io("http://localhost:5000");
 
@@ -37,7 +35,6 @@ const useDashboard = () => {
     socket.on("user_list_updated", handleRefresh);
     socket.on("review_list_updated", handleRefresh);
 
-    // Cleanup function để ngắt kết nối khi component bị unmount
     return () => socket.disconnect();
   }, []);
 

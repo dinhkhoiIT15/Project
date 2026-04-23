@@ -34,7 +34,6 @@ async def startup_event():
     except Exception as e:
         print(f"❌ Error loading model: {e}")
 
-# MỚI: API Endpoint để nạp lại model nóng (Hot Reload) vào RAM
 @app.post("/reload")
 async def reload_model():
     global tokenizer, ort_session
@@ -81,11 +80,6 @@ async def predict(request: ReviewRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 def push_initial_model_to_hf():
-    """
-    Kiểm tra và đẩy model local lên Hugging Face lần đầu tiên.
-    Nếu trên mây đã có model (đã được Colab train và đẩy lên) thì sẽ tự động bỏ qua để không ghi đè.
-    """
-
     load_dotenv()
     HF_TOKEN = os.getenv("HF_TOKEN")
     REPO_ID = "dinhkhoi1501/fake-review-model"
@@ -94,10 +88,8 @@ def push_initial_model_to_hf():
         api = HfApi()
         print("☁️ Checking Hugging Face for existing model...")
         
-        # Lấy danh sách các file hiện có trên Repo Hugging Face
         existing_files = api.list_repo_files(repo_id=REPO_ID, repo_type="model", token=HF_TOKEN)
         
-        # Kiểm tra xem 'model.onnx' đã tồn tại chưa
         if "model.onnx" not in existing_files:
             print("☁️ No model found on Cloud. Uploading initial local ONNX model...")
             api.upload_folder(
@@ -114,6 +106,4 @@ def push_initial_model_to_hf():
     except Exception as e:
         print(f"❌ Failed to sync with Hugging Face: {e}")
 
-# Chạy hàm đẩy model trong một luồng riêng (Background Thread) 
-# để không làm chậm quá trình khởi động của server FastAPI
 threading.Thread(target=push_initial_model_to_hf, daemon=True).start()

@@ -94,7 +94,6 @@ const Profile = () => {
                   </form>
                 ) : (
                   <form onSubmit={handlePasswordUpdate} className="space-y-5">
-                    {/* Ô Nhập Mật khẩu cũ */}
                     <div>
                       <label className="block text-sm font-bold text-[#1f2328] mb-1.5">
                         Old Password
@@ -102,7 +101,6 @@ const Profile = () => {
                       <div className="relative">
                         <input
                           type={showPassword ? "text" : "password"}
-                          // MỚI: Thêm pr-10 để chống lẹm chữ và [&::-ms-reveal]:hidden để ẩn mắt mặc định của Edge
                           className="w-full border border-[#d0d7de] rounded-md pl-3 pr-10 py-2 text-sm focus:outline-none focus:border-[#0969da] focus:ring-1 focus:ring-[#0969da] bg-[#f6f8fa] focus:bg-white transition-colors [&::-ms-reveal]:hidden"
                           value={passwords.old}
                           onChange={(e) =>
@@ -124,7 +122,6 @@ const Profile = () => {
                       </div>
                     </div>
 
-                    {/* Ô Nhập Mật khẩu mới */}
                     <div>
                       <label className="block text-sm font-bold text-[#1f2328] mb-1.5">
                         New Password
@@ -153,7 +150,6 @@ const Profile = () => {
                       </div>
                     </div>
 
-                    {/* Ô Xác nhận Mật khẩu mới */}
                     <div>
                       <label className="block text-sm font-bold text-[#1f2328] mb-1.5">
                         Confirm New Password
@@ -176,7 +172,6 @@ const Profile = () => {
                           className="absolute right-3 top-2.5 text-[#6e7781] hover:text-[#1f2328] transition-colors focus:outline-none"
                           onClick={() => setShowPassword(!showPassword)}
                         >
-                          {/* MỚI: Đã mở comment ra để hiển thị bình thường */}
                           {showPassword ? (
                             <EyeOff size={16} />
                           ) : (

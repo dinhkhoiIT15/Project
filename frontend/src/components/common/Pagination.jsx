@@ -14,14 +14,11 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
     pages.push(i);
   }
 
-  // Loại bỏ border, chỉnh kích thước (w-8 h-8) và đổi sang font-medium giống thiết kế mới
   const btnBase =
     "flex items-center justify-center w-8 h-8 rounded-md text-sm font-medium transition-colors";
   
-  // activeClass tương đương với "brand-secondary"
   const activeClass = "bg-[#ddf4ff] text-[#0969da]"; 
   
-  // inactiveClass tương đương với "neutral-tertiary" (nền trong suốt, hiện nền xám nhạt khi hover)
   const inactiveClass =
     "text-[#6e7781] bg-transparent hover:bg-[#f6f8fa] hover:text-[#1f2328]";
     
@@ -29,10 +26,8 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
     "opacity-40 cursor-not-allowed text-[#6e7781] bg-transparent";
 
   return (
-    // Vẫn giữ thiết lập căn lề phải (justify-end) và khoảng cách lề trên (mt-[5px]) như chúng ta đã làm ở bước trước
     <div className="flex w-full items-center justify-end gap-1 mt-[5px] py-4 border-t border-[#d0d7de] pr-4">
       
-      {/* Group 1: Nút First và Prev */}
       <div className="flex items-center justify-center gap-1">
         <button
           onClick={() => onPageChange(1)}
@@ -50,7 +45,6 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         </button>
       </div>
 
-      {/* Group 2: Các trang số */}
       <div className="flex items-center justify-center gap-1">
         {pages.map((page) => (
           <button
@@ -63,7 +57,6 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         ))}
       </div>
 
-      {/* Group 3: Nút Next và Last */}
       <div className="flex items-center justify-center gap-1">
         <button
           onClick={() => onPageChange(currentPage + 1)}

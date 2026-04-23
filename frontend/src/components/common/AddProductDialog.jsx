@@ -26,9 +26,7 @@ const AddProductDialog = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1f2328]/50 backdrop-blur-sm overflow-y-auto">
-      {/* Mở rộng cực đại để các cột được dàn ngang, tránh bị cuộn */}
       <div className="relative w-full max-w-[1300px] bg-white rounded-xl shadow-2xl flex flex-col my-auto max-h-[95vh] animate-fade-in-up">
-        {/* Header */}
         <div className="flex w-full items-center justify-between px-6 py-4 border-b border-[#d0d7de] shrink-0">
           <h2 className="text-xl font-black text-[#1f2328]">
             {editingId ? "Edit Product" : "Add New Product"}
@@ -42,14 +40,10 @@ const AddProductDialog = ({
           </button>
         </div>
 
-        {/* Form Body */}
         <form id="product-form" onSubmit={onSubmit} className="flex flex-col flex-1 overflow-hidden">
-          {/* Scrollable Content Area */}
-          {/* Giảm padding p-8 xuống p-6 để tiết kiệm không gian */}
           <div className="flex-1 overflow-y-auto p-6">
             <div className="flex flex-col md:flex-row w-full gap-8 items-start">
               
-              {/* COLUMN 1: Basic Information */}
               <div className="flex w-full md:w-1/2 flex-col gap-5">
                 
                 <Input
@@ -156,10 +150,8 @@ const AddProductDialog = ({
                 />
               </div>
 
-              {/* COLUMN 2: Media, Content & Specs */}
               <div className="flex w-full md:w-1/2 flex-col gap-5">
                 
-                {/* Khối AI Keywords - Sử dụng items-end để nút Button bám sát đáy của Input */}
                 <div className="flex items-end gap-2 w-full">
                   <div className="flex-1">
                     <Input
@@ -181,13 +173,9 @@ const AddProductDialog = ({
                   </Button>
                 </div>
 
-                {/* Khối Description */}
-                {/* Thêm flex-1 để khối này giãn ra lấp đầy khoảng trống dọc */}
                 <div className="flex flex-col gap-1.5 flex-1">
                   <label className="text-xs font-bold text-[#1f2328] uppercase">Description</label>
                   <textarea
-                    // Thay đổi min-h-[160px] thành h-full và thay đổi resize-y thành resize-none nếu bạn không muốn người dùng thay đổi kích thước thủ công, 
-                    // hoặc sử dụng min-h-[140px] nếu bạn muốn một giá trị cố định gần đúng.
                     className="w-full h-full min-h-[120px] px-3 py-2 border border-[#d0d7de] rounded-md text-sm outline-none focus:border-[#0969da] resize-none"
                     placeholder="Product description will appear here..."
                     value={formData.description}
@@ -195,7 +183,6 @@ const AddProductDialog = ({
                   />
                 </div>
 
-                {/* Khối Specifications */}
                 <div className="flex flex-col gap-3 mt-2">
                   <div className="flex flex-col gap-1 border-b border-[#d0d7de] pb-2">
                     <span className="text-lg font-bold text-[#1f2328]">Specifications</span>
@@ -243,18 +230,13 @@ const AddProductDialog = ({
                   </div>
 
                   {Object.keys(formData.specifications || {}).length > 0 && (
-                    // 1. Loại bỏ bg, border, padding thừa.
-                    // 2. Chuyển sang grid 2 cột (grid-cols-2).
-                    // 3. Sử dụng gap-[1.5px] theo yêu cầu của bạn (mặc dù thực tế gap-1 (4px) hoặc gap-[2px] thường được dùng hơn trong Tailwind, tôi sẽ thiết lập chính xác như bạn yêu cầu).
                     <div className="grid grid-cols-2 gap-[1.5px] max-h-[200px] overflow-y-auto mt-2">
                       {Object.entries(formData.specifications).map(([key, value]) => (
                         <div key={key} className="flex items-center gap-1.5 p-1">
-                          {/* Ô Label: Cố định độ rộng để gọn hơn */}
                           <div className="w-[100px] p-2 bg-white border border-[#d0d7de] rounded-md text-xs font-bold text-[#1f2328] truncate h-[34px] flex items-center shadow-sm" title={key}>
                             {key}
                           </div>
                           
-                          {/* Ô Value: Chiếm phần còn lại (flex-1) nhưng vì nằm trong cột grid nên nó sẽ hẹp lại */}
                           {Array.isArray(availableContext.specs[key]) ? (
                             <select
                               className="flex-1 min-w-0 px-2 py-1 border border-[#d0d7de] rounded-md text-xs outline-none focus:border-[#0969da] bg-white h-[34px] shadow-sm"
@@ -276,7 +258,6 @@ const AddProductDialog = ({
                             />
                           )}
 
-                          {/* Nút xóa */}
                           <button
                             type="button"
                             onClick={() => handleRemoveSpec(key)}
@@ -294,7 +275,6 @@ const AddProductDialog = ({
             </div>
           </div>
 
-          {/* Footer */}
           <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#d0d7de] bg-[#f6f8fa] rounded-b-xl shrink-0">
             <Button type="button" variant="outline" onClick={onClose} className="px-6 h-[38px]">
               Cancel

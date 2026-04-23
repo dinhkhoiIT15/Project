@@ -29,12 +29,10 @@ const useHome = () => {
     setSelectedBrand(brandParam);
   }, [location.key, categoryParam, brandParam]);
 
-  // Reset về trang 1 khi thay đổi tìm kiếm hoặc danh mục
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedCategory, selectedBrand]);
 
-  // Fetch Danh mục sản phẩm (Chỉ chạy 1 lần khi mount)
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -47,7 +45,6 @@ const useHome = () => {
     fetchCategories();
   }, []);
 
-  // Fetch Sản phẩm
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
@@ -71,7 +68,6 @@ const useHome = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory, selectedBrand, currentPage, searchTerm, refreshKey]);
 
-  // Lắng nghe thay đổi dữ liệu realtime
   useEffect(() => {
     const socket = io("http://localhost:5000");
 
@@ -82,7 +78,6 @@ const useHome = () => {
     return () => socket.disconnect();
   }, []);
 
-  // Xử lý thêm vào giỏ hàng
   const handleAddToCart = async (productId) => {
     if (!localStorage.getItem("token") && !sessionStorage.getItem("token")) {
       addToast("Sign in to add to cart", "info");

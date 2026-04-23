@@ -8,9 +8,9 @@ from app.controllers.review_controller import (
     get_product_reviews,
     update_review,       
     user_delete_review,  
-    test_ai_review,       # MỚI: Import API Test
+    test_ai_review,      
     toggle_hide_review,
-    accept_review,        # MỚI: Import API Accept
+    accept_review,        
     admin_get_product_context,
     push_data_to_hf,
     pull_model_from_hf

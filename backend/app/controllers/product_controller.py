@@ -7,8 +7,7 @@ import requests
 import string
 import random
 from dotenv import load_dotenv
-
-import re # Đảm bảo có import re ở đầu file
+import re 
 
 def generate_description_api():
     """API endpoint to generate product description via Hugging Face"""
@@ -16,12 +15,11 @@ def generate_description_api():
     name = data.get('name')
     category_name = data.get('category_name')
     keywords = data.get('keywords', '')
-    specifications = data.get('specifications', {}) # MỚI: Nhận dữ liệu specs
+    specifications = data.get('specifications', {})
 
     if not name or not category_name:
         return jsonify({"message": "Product name and category are required"}), 400
 
-    # MỚI: Xử lý Dict thông số kỹ thuật thành chuỗi dễ đọc cho AI (VD: "RAM: 8GB, CPU: Core i5")
     specs_str = ""
     if isinstance(specifications, dict) and specifications:
         specs_list = [f"{k}: {v}" for k, v in specifications.items() if str(v).strip()]
@@ -37,7 +35,6 @@ def generate_description_api():
         "Content-Type": "application/json"
     }
 
-    # PROMPT CHUẨN SEO, TỰ NHIÊN VÀ ĐA DẠNG PHONG CÁCH
     prompt = f"""You are an expert E-commerce SEO copywriter.
 Write a highly engaging, natural, and professional plain text product description in Vietnamese for:
 - Product Name: {name}
@@ -56,8 +53,8 @@ Requirements:
         "messages": [
             {"role": "user", "content": prompt}
         ],
-        "max_tokens": 250,  # Tăng lên 250 để AI thoải mái viết tối đa 200 từ mà không bị ngắt quãng
-        "temperature": 0.8  # Tăng temperature một chút (từ 0.7 lên 0.8) để văn phong AI đa dạng, sáng tạo và tự nhiên hơn
+        "max_tokens": 250,  
+        "temperature": 0.8 
     }
 
     try:
@@ -66,7 +63,6 @@ Requirements:
             result = response.json()
             generated_text = result['choices'][0]['message']['content'].strip()
             
-            # BỘ LỌC THÉP: Xóa sạch mọi thẻ ngoặc nhọn <...> nếu AI lỡ sinh ra
             clean_text = re.sub(r'<[^>]+>', '', generated_text)
             clean_text = clean_text.replace("```html", "").replace("```", "").strip()
 
@@ -79,7 +75,7 @@ Requirements:
 def get_all_products():
     search = request.args.get('search', '')
     category_id = request.args.get('category_id', '')
-    brand = request.args.get('brand', '')  # THÊM DÒNG NÀY
+    brand = request.args.get('brand', '')  
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 8, type=int)
     
@@ -100,11 +96,8 @@ def get_all_products():
         except (ValueError, TypeError):
             pass
     
-    # THÊM FILTER THEO BRAND - Sử dụng exact match không phân biệt hoa/thường
     if brand and brand.strip():
-        # Dùng ilike với exact match (không có % ở đầu và cuối)
         query = query.filter(Product.brand.ilike(brand))
-        # Log để debug (sẽ hiển thị trong terminal)
         print(f"[DEBUG] Filtering by brand: '{brand}'")
     
     total_count = query.count()
@@ -122,7 +115,6 @@ def get_all_products():
             "category_id": p.category_id,
             "category_name": category_name or "General",
             "image_url": p.image_url,
-            # MỚI THÊM
             "sku": p.sku,
             "brand": p.brand,
             "discount_price": p.discount_price,
@@ -143,7 +135,7 @@ def get_product_by_id(product_id):
         Category, Product.category_id == Category.category_id
     ).filter(
         Product.product_id == product_id,
-        Product.is_active == True  # THÊM DÒNG NÀY: Chỉ hiển thị nếu đang active
+        Product.is_active == True  
     ).first()
 
     if not data:
@@ -166,7 +158,6 @@ def get_product_by_id(product_id):
             "image_url": p.image_url,
             "avg_rating": round(avg_rating, 1),
             "review_count": len(reviews),
-            # MỚI THÊM
             "sku": p.sku,
             "brand": p.brand,
             "discount_price": p.discount_price,
@@ -179,18 +170,13 @@ def get_product_by_id(product_id):
 def get_similar_products(product_id):
     """Get up to 4 products from the SAME category only, excluding current product"""
     try:
-        # Lấy thông tin sản phẩm hiện tại
         current_product = Product.query.get(product_id)
         if not current_product:
             return jsonify({"message": "Product not found"}), 404
         
-        # Lấy tên category để debug
         category = Category.query.get(current_product.category_id)
         category_name = category.name if category else "Unknown"
         
-        # CHỈ lấy sản phẩm cùng category, khác product_id, và đang active
-        # KHÔNG filter stock_quantity > 0 để vẫn hiển thị sản phẩm hết hàng (nhưng ghi nhãn Out of Stock)
-        # Sắp xếp: sản phẩm còn hàng lên trước, sau đó mới đến hết hàng
         similar_products = db.session.query(Product, Category.name.label('category_name')).outerjoin(
             Category, Product.category_id == Category.category_id
         ).filter(
@@ -198,9 +184,8 @@ def get_similar_products(product_id):
             Product.product_id != product_id,
             Product.is_active == True
         ).order_by(
-            # Ưu tiên sản phẩm còn hàng lên trước
-            Product.stock_quantity > 0,  # True (còn hàng) sẽ được ưu tiên
-            Product.product_id.desc()  # Sản phẩm mới hơn lên trước
+            Product.stock_quantity > 0, 
+            Product.product_id.desc()  
         ).limit(4).all()
         
         result = []
@@ -224,12 +209,12 @@ def get_similar_products(product_id):
         return jsonify({
             "products": result,
             "count": len(result),
-            "category": category_name,  # Thêm category vào response để debug
+            "category": category_name,  
             "status": "success"
         }), 200
         
     except Exception as e:
-        print(f"Error in get_similar_products: {str(e)}")  # Log lỗi ra console
+        print(f"Error in get_similar_products: {str(e)}")  
         return jsonify({"message": f"Error fetching similar products: {str(e)}"}), 500
 
 def create_product():
@@ -240,10 +225,8 @@ def create_product():
             return jsonify({"message": "Category not found"}), 404
             
         description = data.get('description', '')
-        # Lấy SKU do Frontend gửi lên
         sku = data.get('sku', '')[:6].upper()
 
-        # Kiểm tra vòng lặp: Nếu SKU đã tồn tại trong DB thì tự động sinh 3 ký tự cuối mới
         while Product.query.filter_by(sku=sku).first():
             random_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=3))
             sku = sku[:3] + random_suffix
@@ -255,8 +238,7 @@ def create_product():
             stock_quantity=int(data.get('stock_quantity', 0)),
             category_id=int(data.get('category_id')),
             image_url=data.get('image_url', ''),
-            # MỚI THÊM
-            sku=sku, # Đã được xác minh độ Unique 100%
+            sku=sku, 
             brand=data.get('brand', ''),
             specifications=data.get('specifications', {}),
             discount_price=float(data.get('discount_price')) if data.get('discount_price') else None,
@@ -287,7 +269,6 @@ def update_product(product_id):
         if 'image_url' in data: product.image_url = data['image_url']
         if 'category_id' in data: product.category_id = int(data['category_id'])
         if 'description' in data: product.description = data['description']
-        # MỚI THÊM
         if 'sku' in data: product.sku = data['sku']
         if 'brand' in data: product.brand = data['brand']
         if 'specifications' in data: product.specifications = data['specifications']

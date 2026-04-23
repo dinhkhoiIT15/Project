@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { ToastProvider } from "./context/ToastContext.jsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
 import { CartProvider } from "./context/CartContext.jsx";
-
 // Pages & Components
 import Home from "./pages/customer/Home";
 import AdminLayout from "./components/layout/AdminLayout";
@@ -22,12 +21,8 @@ import ManageReviews from "./pages/admin/ManageReviews";
 import OrderDetail from "./pages/customer/OrderDetail";
 import ManageUsers from "./pages/admin/ManageUsers";
 
-// Hook khởi tạo
 import { useAppInit } from "./hooks/app/useAppInit";
 
-/**
- * Route bảo vệ cho khách hàng (Yêu cầu đăng nhập)
- */
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? (
@@ -37,9 +32,6 @@ const PrivateRoute = ({ children }) => {
   );
 };
 
-/**
- * Route bảo vệ cho Admin (Yêu cầu quyền Admin)
- */
 const AdminRoute = ({ children }) => {
   const { isAuthenticated, user } = useAuth();
   if (!isAuthenticated)
@@ -47,10 +39,6 @@ const AdminRoute = ({ children }) => {
   if (user?.role !== "Admin") return <Navigate to="/" replace />;
   return children;
 };
-
-/**
- * Cấu trúc chính của ứng dụng
- */
 
 const AppContent = () => {
   const { loading, isAdminPath } = useAppInit();
@@ -69,7 +57,6 @@ const AppContent = () => {
           {/* --- CUSTOMER ROUTES --- */}
           <Route path="/" element={<Home />} />
           <Route path="/product/:id" element={<ProductDetail />} />
-          
           <Route path="/cart" element={<PrivateRoute><Cart /></PrivateRoute>} />
           <Route path="/checkout" element={<PrivateRoute><Checkout /></PrivateRoute>} />
           <Route path="/my-orders" element={<PrivateRoute><MyOrders /></PrivateRoute>} />
@@ -86,8 +73,7 @@ const AppContent = () => {
             <Route path="reviews" element={<ManageReviews />} />
             <Route path="users" element={<ManageUsers />} />
           </Route>
-
-          {/* Điều hướng mặc định nếu sai đường dẫn */}
+          
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

@@ -21,7 +21,6 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    // CHỈ BẮT MÃ 401 (Unauthorized - Sai Token/Hết hạn Token) để đăng xuất
     if (err.response?.status === 401) {
       localStorage.clear();
       sessionStorage.clear();

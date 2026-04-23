@@ -158,25 +158,25 @@ const useManageReviews = () => {
 
   const handlePushData = async () => {
     setIsPushing(true);
-    addToast("Pushing data to Colab. Please wait...", "info"); // Hiện Toast báo đang tải lên
+    addToast("Pushing data to Colab. Please wait...", "info"); 
 
     const interval = setInterval(() => {
       setPushProgress((prev) => {
-        if (prev >= 90) return prev; // Dừng ở 90% đợi Backend làm xong
+        if (prev >= 90) return prev; 
         return prev + 10;
       });
     }, 500);
 
     try {
       const res = await api.post("/reviews/admin/push-data");
-      setPushProgress(100); // Đặt 100% khi có phản hồi từ Backend
+      setPushProgress(100); 
       addToast(res.data.message, "success");
     } catch (err) {
-      showProgress(false); // Ẩn Progress nếu có lỗi
+      showProgress(false); 
       addToast(err.response?.data?.message || "Failed to push data", "error");
     } finally {
       setIsPushing(false);
-      setTimeout(() => setShowProgress(false), 2000); // Ẩn Progress sau khi hoàn thành
+      setTimeout(() => setShowProgress(false), 2000); 
     }
   };
 
@@ -186,17 +186,16 @@ const useManageReviews = () => {
     setPullProgress(0);
     addToast("Downloading model from Hugging Face. Please wait...", "info");
 
-    // Giả lập Progress Bar mượt mà (chạy chậm hơn Push một chút vì file model nặng hơn)
     const interval = setInterval(() => {
       setPullProgress((prev) => {
-        if (prev >= 90) return prev; // Dừng ở 90% đợi Backend làm xong
+        if (prev >= 90) return prev; 
         return prev + 10;
       });
     }, 800); 
 
     try {
       const res = await api.post("/reviews/admin/pull-model");
-      setPullProgress(100); // Backend báo xong -> Kéo thẳng lên 100%
+      setPullProgress(100); 
       addToast(res.data.message, "success"); 
     } catch (err) {
       setShowPullProgress(false);
@@ -204,7 +203,6 @@ const useManageReviews = () => {
     } finally {
       clearInterval(interval);
       setIsPulling(false);
-      // Đợi 2 giây cho user thấy 100% rồi mới ẩn thanh progress đi
       setTimeout(() => setShowPullProgress(false), 2000);
     }
   };
