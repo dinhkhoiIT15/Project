@@ -12,16 +12,23 @@ const useManageCategories = () => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState(null);
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   const { addToast } = useToast();
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [currentPage]); 
 
   const fetchCategories = async () => {
     try {
-      const res = await api.get("/categories");
+      const res = await api.get("/categories", {
+        params: { page: currentPage }
+      });
       setCategories(res.data.categories || []);
+      setTotalPages(res.data.total_pages || 1);
     } catch (err) {
       addToast("Error loading categories", "error");
     } finally {
@@ -32,7 +39,7 @@ const useManageCategories = () => {
   const handleEdit = (cat) => {
     setEditingId(cat.category_id);
     setFormData({ name: cat.name, description: cat.description || "" });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setIsModalOpen(true); 
   };
 
   const initiateDelete = (id) => {
@@ -59,12 +66,15 @@ const useManageCategories = () => {
       if (editingId) {
         await api.put(`/categories/${editingId}`, formData);
         addToast("Category updated successfully!", "success");
+        fetchCategories(); 
       } else {
         await api.post("/categories", formData);
         addToast("Category created successfully!", "success");
+        setCurrentPage(1); 
+        fetchCategories(); 
       }
       resetForm();
-      fetchCategories();
+      setIsModalOpen(false); 
     } catch (err) {
       addToast(err.response?.data?.message || "Action failed", "error");
     } finally {
@@ -91,6 +101,11 @@ const useManageCategories = () => {
     confirmDelete,
     handleSubmit,
     resetForm,
+    isModalOpen,
+    setIsModalOpen,
+    currentPage,
+    setCurrentPage,
+    totalPages,
   };
 };
 

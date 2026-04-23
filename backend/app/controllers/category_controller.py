@@ -3,7 +3,11 @@ from app.models.models import db, Category, Product
 import math
 
 def get_all_categories():
-    categories = Category.query.all()
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    pagination = Category.query.order_by(Category.category_id.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    categories = pagination.items
+    
     result = []
     for cat in categories:
         result.append({
@@ -11,7 +15,13 @@ def get_all_categories():
             "name": cat.name,
             "description": cat.description
         })
-    return jsonify({"categories": result, "status": "success"}), 200
+        
+    return jsonify({
+        "categories": result, 
+        "total_pages": pagination.pages,
+        "current_page": page,
+        "status": "success"
+    }), 200
 
 def create_category():
     data = request.get_json()

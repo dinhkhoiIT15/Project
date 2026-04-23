@@ -49,10 +49,9 @@ const ManageProducts = () => {
 
       <div className="flex flex-col gap-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-black text-[#1f2328] tracking-tight">
-          Manage Products
-        </h1>
+      <div className="flex items-center">
+          <Package className="w-6 h-6 text-[#6e7781] mr-3" />
+          <h1 className="text-2xl font-bold text-[#1f2328]">Manage Products</h1>
       </div>
 
       <div className="flex flex-col gap-8">
