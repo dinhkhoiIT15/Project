@@ -33,7 +33,7 @@ const Login = ({ onLoginSuccess, switchToRegister }) => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col w-full">
+      <form onSubmit={handleSubmit} className="flex flex-col w-full gap-1.5">
         <Input
           label="Username"
           name="username"
