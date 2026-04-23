@@ -6,7 +6,9 @@ import { useToast } from "../../context/ToastContext";
 const useManageOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -66,6 +68,25 @@ const useManageOrders = () => {
     }
   };
 
+  const fetchOrderDetails = async (id) => {
+    setLoadingDetails(true);
+    setIsModalOpen(true);
+    try {
+      const res = await api.get(`/orders/${id}`);
+      setSelectedOrder(res.data.order);
+    } catch (err) {
+      addToast("Failed to fetch order details", "error");
+      setIsModalOpen(false);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedOrder(null);
+  };
+
   return {
     orders,
     loading,
@@ -73,6 +94,11 @@ const useManageOrders = () => {
     setCurrentPage,
     totalPages,
     handleStatusUpdate,
+    selectedOrder,
+    isModalOpen,
+    loadingDetails,
+    fetchOrderDetails,
+    closeModal,
   };
 };
 

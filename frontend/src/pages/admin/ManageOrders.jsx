@@ -12,6 +12,11 @@ const ManageOrders = () => {
     setCurrentPage,
     totalPages,
     handleStatusUpdate,
+    selectedOrder,       
+    isModalOpen,        
+    loadingDetails,   
+    fetchOrderDetails,  
+    closeModal,
   } = useManageOrders();
 
   return (
@@ -39,12 +44,12 @@ const ManageOrders = () => {
                 className="hover:bg-[#f6f8fa] transition-colors"
               >
                 <td className="p-4 font-mono text-xs">
-                  <Link
-                    to={`/order/${order.order_id}`}
-                    className="text-[#0969da] hover:underline font-bold"
+                  <button
+                    onClick={() => fetchOrderDetails(order.order_id)}
+                    className="text-[#0969da] hover:underline font-bold cursor-pointer"
                   >
                     #{order.order_id}
-                  </Link>
+                  </button>
                 </td>{" "}
                 <td className="p-4">
                   <div className="flex flex-col">
@@ -96,6 +101,77 @@ const ManageOrders = () => {
         totalPages={totalPages}
         onPageChange={setCurrentPage}
       />
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex justify-between items-center mb-6 border-b pb-4">
+              <h2 className="text-xl font-bold text-[#1f2328]">
+                Order Details {selectedOrder ? `#${selectedOrder.order_id}` : ""}
+              </h2>
+              <button onClick={closeModal} className="text-gray-500 hover:text-red-500 font-bold text-lg">
+                ✕
+              </button>
+            </div>
+            
+            {loadingDetails ? (
+              <div className="text-center py-10 font-bold text-[#6e7781] animate-pulse">
+                Loading order details...
+              </div>
+            ) : selectedOrder ? (
+              <div>
+                <div className="grid grid-cols-2 gap-4 mb-6 text-sm bg-[#f6f8fa] p-4 rounded-md border border-[#d0d7de]">
+                  <div>
+                    <p className="text-[#6e7781] mb-1">Order Date:</p>
+                    <p className="font-bold">{selectedOrder.order_date}</p>
+                  </div>
+                  <div>
+                    <p className="text-[#6e7781] mb-1">Status:</p>
+                    <p className="font-bold uppercase text-[#0969da]">{selectedOrder.order_status}</p>
+                  </div>
+                  <div>
+                    <p className="text-[#6e7781] mb-1">Payment Method:</p>
+                    <p className="font-bold uppercase">{selectedOrder.payment_method}</p>
+                  </div>
+                  <div>
+                    <p className="text-[#6e7781] mb-1">Shipping Address:</p>
+                    <p className="font-bold line-clamp-2" title={selectedOrder.shipping_address}>
+                      {selectedOrder.shipping_address}
+                    </p>
+                  </div>
+                </div>
+
+                <h3 className="font-bold text-[#1f2328] mb-4">Purchased Items</h3>
+                <div className="space-y-3 mb-6">
+                  {selectedOrder.items.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center border border-[#d0d7de] p-3 rounded hover:bg-[#f6f8fa] transition">
+                      <div className="flex items-center gap-4">
+                        <img 
+                          src={item.image_url || 'https://via.placeholder.com/50'} 
+                          alt={item.product_name} 
+                          className="w-12 h-12 object-cover rounded border" 
+                        />
+                        <div>
+                          <p className="font-bold text-sm text-[#1f2328]">{item.product_name}</p>
+                          <p className="text-xs text-[#6e7781] mt-1">Quantity: {item.quantity}</p>
+                        </div>
+                      </div>
+                      <p className="font-black text-[#1f2328]">${item.price.toFixed(2)}</p>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex justify-end items-center border-t border-[#d0d7de] pt-4">
+                  <p className="text-lg text-[#6e7781] mr-4">Total Amount:</p>
+                  <p className="text-2xl font-black text-[#0969da]">${selectedOrder.total_amount.toFixed(2)}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-red-500 py-10 font-bold">Failed to load details.</div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
