@@ -3,6 +3,7 @@ import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
 import { UserPlus } from "lucide-react";
 import useRegister from "../../hooks/auth/useRegister";
+import useDocumentTitle from "../../hooks/app/useDocumentTitle";
 
 const Register = ({ switchToLogin }) => {
   const {
@@ -13,6 +14,8 @@ const Register = ({ switchToLogin }) => {
     handleChange,
     handleSubmit,
   } = useRegister(switchToLogin);
+
+  useDocumentTitle("Sign Up");
 
   return (
     <div className="flex w-full flex-col animate-fade-in pb-4 px-2">

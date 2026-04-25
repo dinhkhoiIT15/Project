@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Pagination from "../../components/common/Pagination";
 import useManageUsers from "../../hooks/admin/useManageUsers";
+import useDocumentTitle from "../../hooks/app/useDocumentTitle";
 
 const ManageUsers = () => {
   const {
@@ -37,6 +38,8 @@ const ManageUsers = () => {
     handleToggleClick,
     confirmToggleStatus,
   } = useManageUsers();
+
+  useDocumentTitle("Users");
 
   return (
     <div className="p-6">

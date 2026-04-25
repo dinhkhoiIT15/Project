@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import Pagination from "../../components/common/Pagination";
 import useManageReviews from "../../hooks/admin/useManageReviews";
+import useDocumentTitle from "../../hooks/app/useDocumentTitle";
+
 
 const ManageReviews = () => {
   const {
@@ -55,6 +57,8 @@ const ManageReviews = () => {
     pullProgress,
     showPullProgress
   } = useManageReviews();
+
+  useDocumentTitle("Reviews");
 
   return (
     <div className="p-6">

@@ -3,6 +3,7 @@ import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
 import { LogIn } from "lucide-react";
 import useLogin from "../../hooks/auth/useLogin";
+import useDocumentTitle from "../../hooks/app/useDocumentTitle";
 
 const Login = ({ onLoginSuccess, switchToRegister }) => {
   const {
@@ -12,6 +13,8 @@ const Login = ({ onLoginSuccess, switchToRegister }) => {
     errorMsg,
     handleSubmit,
   } = useLogin(onLoginSuccess);
+
+  useDocumentTitle("Sign In");
 
   return (
     <div className="flex w-full flex-col animate-fade-in pb-4 px-2">

@@ -5,6 +5,7 @@ import Button from "../../components/common/Button";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
 import useProfile from "../../hooks/customer/useProfile";
+import useDocumentTitle from "../../hooks/app/useDocumentTitle";
 
 const Profile = () => {
   const {
@@ -21,6 +22,8 @@ const Profile = () => {
     handleProfileUpdate,
     handlePasswordUpdate,
   } = useProfile();
+
+  useDocumentTitle("My Profile");
 
   return (
     <div className="min-h-screen bg-white">

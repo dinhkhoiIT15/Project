@@ -5,6 +5,7 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import Pagination from "../../components/common/Pagination";
 import { Tags, PlusCircle, Edit, Trash2, X } from "lucide-react";
 import useManageCategories from "../../hooks/admin/useManageCategories";
+import useDocumentTitle from "../../hooks/app/useDocumentTitle";
 
 const ManageCategories = () => {
   const {
@@ -26,6 +27,8 @@ const ManageCategories = () => {
     setCurrentPage,
     totalPages
   } = useManageCategories();
+
+  useDocumentTitle("Categories");
 
   return (
     <div className="animate-fade-in">

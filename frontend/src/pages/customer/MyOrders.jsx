@@ -4,6 +4,7 @@ import { ClipboardList, Clock, Package, Star } from "lucide-react";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
 import Pagination from "../../components/common/Pagination";
 import useMyOrders from "../../hooks/customer/useMyOrders";
+import useDocumentTitle from "../../hooks/app/useDocumentTitle";
 
 const MyOrders = () => {
   const {
@@ -15,6 +16,8 @@ const MyOrders = () => {
     navigate,
     getStatusStyle,
   } = useMyOrders();
+
+  useDocumentTitle("My Orders");
 
   return (
     <div className="min-h-screen bg-white">

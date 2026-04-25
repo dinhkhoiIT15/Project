@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Truck, Clock, User, DollarSign } from "lucide-react";
 import Pagination from "../../components/common/Pagination";
 import useManageOrders from "../../hooks/admin/useManageOrders";
+import useDocumentTitle from "../../hooks/app/useDocumentTitle";
 
 const ManageOrders = () => {
   const {
@@ -18,6 +19,8 @@ const ManageOrders = () => {
     fetchOrderDetails,  
     closeModal,
   } = useManageOrders();
+
+  useDocumentTitle("Orders");
 
   return (
     <div className="animate-fade-in">

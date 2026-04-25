@@ -24,6 +24,7 @@ import useProductDetail from "../../hooks/customer/useProductDetail";
 import api from "../../services/api";
 import { useToast } from "../../context/ToastContext";
 import { useCart } from "../../context/CartContext";
+import useDocumentTitle from "../../hooks/app/useDocumentTitle";
 
 const ProductDetail = () => {
   const {
@@ -57,6 +58,8 @@ const ProductDetail = () => {
     similarProducts,
     loadingSimilar,
   } = useProductDetail();
+
+  useDocumentTitle(product ? product.category_name || product.name : "Loading...");
 
   if (loading)
     return (

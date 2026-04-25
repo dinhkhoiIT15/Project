@@ -5,6 +5,7 @@ import Pagination from "../../components/common/Pagination";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
 import { Loader2 } from "lucide-react";
 import useHome from "../../hooks/customer/useHome";
+import useDocumentTitle from "../../hooks/app/useDocumentTitle";
 
 const Home = () => {
   const {
@@ -20,6 +21,8 @@ const Home = () => {
     navigate,
     handleAddToCart,
   } = useHome();
+
+  useDocumentTitle("Home");
 
   return (
     <div className="min-h-screen bg-white">

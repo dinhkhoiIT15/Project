@@ -22,13 +22,14 @@ import {
   Legend,
   Label,
 } from "recharts";
-
-// Import Custom Hook
 import useDashboard from "../../hooks/admin/useDashboard";
+import useDocumentTitle from "../../hooks/app/useDocumentTitle";
 
 const COLORS = ["#0969da", "#1a7f37", "#bf3989", "#cf222e", "#8250df"];
 
 const Dashboard = () => {
+  useDocumentTitle("Admin Dashboard");
+
   const { data, loading } = useDashboard();
 
   if (loading)

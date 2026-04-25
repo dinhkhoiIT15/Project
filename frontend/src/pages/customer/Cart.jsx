@@ -6,9 +6,12 @@ import { ShoppingCart, CreditCard, ArrowLeft } from "lucide-react";
 import CartItem from "../../components/cart/CartItem";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
 import useCartPage from "../../hooks/customer/useCartPage";
+import useDocumentTitle from "../../hooks/app/useDocumentTitle";
 
 const Cart = () => {
   const { cart, loading, handleUpdateQty, handleRemove } = useCartPage();
+
+  useDocumentTitle("Cart");
 
   if (loading)
     return (
