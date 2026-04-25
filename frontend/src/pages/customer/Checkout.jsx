@@ -5,6 +5,7 @@ import Input from "../../components/common/Input";
 import { ShieldCheck, Truck, Clock, CheckCircle2, XCircle } from "lucide-react";
 import Breadcrumbs from "../../components/common/Breadcrumbs";
 import useCheckout from "../../hooks/customer/useCheckout";
+import useDocumentTitle from "../../hooks/app/useDocumentTitle";
 
 const Checkout = () => {
   const {
@@ -18,6 +19,8 @@ const Checkout = () => {
     handleUserCancel,
     navigate,
   } = useCheckout();
+
+  useDocumentTitle("Checkout");
 
   if (placedOrderId) {
     return (
