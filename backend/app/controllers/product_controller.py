@@ -168,7 +168,7 @@ def get_product_by_id(product_id):
     }), 200
 
 def get_similar_products(product_id):
-    """Get up to 4 products from the SAME category only, excluding current product"""
+    """Get up to 4 products from the SAME category AND SAME brand, excluding current product"""
     try:
         current_product = Product.query.get(product_id)
         if not current_product:
@@ -180,9 +180,10 @@ def get_similar_products(product_id):
         similar_products = db.session.query(Product, Category.name.label('category_name')).outerjoin(
             Category, Product.category_id == Category.category_id
         ).filter(
-            Product.category_id == current_product.category_id,
-            Product.product_id != product_id,
-            Product.is_active == True
+            Product.category_id == current_product.category_id, 
+            Product.brand == current_product.brand,              
+            Product.product_id != product_id,                    
+            Product.is_active == True                            
         ).order_by(
             Product.stock_quantity > 0, 
             Product.product_id.desc()  
@@ -212,10 +213,8 @@ def get_similar_products(product_id):
             "category": category_name,  
             "status": "success"
         }), 200
-        
     except Exception as e:
-        print(f"Error in get_similar_products: {str(e)}")  
-        return jsonify({"message": f"Error fetching similar products: {str(e)}"}), 500
+        return jsonify({"message": "Error fetching similar products", "error": str(e)}), 500
 
 def create_product():
     data = request.get_json()

@@ -445,13 +445,13 @@ const Navbar = () => {
             </div>
           ) : (
             <div className="mt-2">
-              {isSidebarOpen && sidebarView === "login" && (
+              {sidebarView === "login" && (
                 <Login
                   onLoginSuccess={handleLoginSuccess}
                   switchToRegister={() => setSidebarView("register")}
                 />
               )}
-              {isSidebarOpen && sidebarView === "register" && (
+              {sidebarView === "register" && (
                 <Register switchToLogin={() => setSidebarView("login")} />
               )}
             </div>
