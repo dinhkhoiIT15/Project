@@ -149,6 +149,7 @@ SECRET_KEY=your_secret_key_here
 # HuggingFace (for AI model sync - optional)
 HF_TOKEN=your_huggingface_token
 ```
+Get HF_TOKEN: Click the link: https://docs.google.com/document/d/1FHGsHqJJA7KXFjBJptUGEgDvTDb4sDtC1hWMrC-Bjns/edit?usp=sharing
 
 ### Step 3: Start Backend Server
 
